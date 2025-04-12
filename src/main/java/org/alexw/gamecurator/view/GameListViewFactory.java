@@ -22,13 +22,11 @@ public class GameListViewFactory {
 
     private final GameItemNodeFactory gameItemNodeFactory;
 
-    // Define the list of available genres
     public static final Set<String> AVAILABLE_GENRES = Set.of(
             "Action", "Indie", "Adventure", "RPG", "Strategy", "Shooter", "Casual",
             "Simulation", "Puzzle", "Arcade", "Platformer", "Massively Multiplayer",
             "Racing", "Sports", "Fighting", "Family"
     );
-
 
     public GameListViewFactory(GameItemNodeFactory gameItemNodeFactory) {
         this.gameItemNodeFactory = gameItemNodeFactory;
@@ -110,22 +108,19 @@ public class GameListViewFactory {
             }
         }
 
-        // Handle case where initial data was empty or null
         if (gameListContainer.getChildren().isEmpty() && gamesAdded == 0) {
-            // This covers cases where parsing failed or filters removed everything
+
             if (gameListContainer.getChildren().stream().noneMatch(node -> node instanceof Label)) {
                  gameListContainer.getChildren().add(new Label("No games to display."));
             }
         }
 
-
         scrollPane.setContent(gameListContainer);
         return scrollPane;
     }
 
-    // Helper method to check if a game passes the filters
     private boolean passesFilters(JsonObject game, Set<String> selectedGenres, Integer minPlaytime, Integer maxPlaytime) {
-        // Genre Filter
+
         if (selectedGenres != null && !selectedGenres.isEmpty()) {
             if (!game.has("genres") || !game.get("genres").isJsonArray()) {
                 return false;
@@ -143,10 +138,9 @@ public class GameListViewFactory {
             }
         }
 
-        // Playtime Filter
         if (minPlaytime != null || maxPlaytime != null) {
             if (!game.has("playtime") || !game.get("playtime").isJsonPrimitive() || !game.get("playtime").getAsJsonPrimitive().isNumber()) {
-                // If filtering by playtime, game must have a valid playtime number
+
                  if (!(minPlaytime != null && minPlaytime == 0 && game.has("playtime") && game.get("playtime").getAsInt() == 0)) {
                     return false;
                  }

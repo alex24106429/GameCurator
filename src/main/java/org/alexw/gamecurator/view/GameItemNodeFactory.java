@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 
 public class GameItemNodeFactory {
 
-	// Need access to LibraryManager and potentially MainController for actions
 	private final LibraryManager libraryManager;
 	private final MainController mainController;
 
@@ -29,17 +28,15 @@ public class GameItemNodeFactory {
 	}
 
 	public Node createGameItemNode(JsonObject game) throws IOException {
-		// Ensure game is not null
+
 		if (game == null) {
 			System.err.println("Error: Cannot create game item node from null game object.");
 			return new Label("Error: Invalid game data");
 		}
 
-		// Load FXML from the correct resources path
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/alexw/gamecurator/GameItem.fxml"));
 		Parent gameItemRoot = loader.load();
 
-		// Safely access FXML elements
 		ImageView gameImageView = (ImageView) loader.getNamespace().get("gameImageView");
 		Label gameNameLabel = (Label) loader.getNamespace().get("gameNameLabel");
 		Label gameReleaseLabel = (Label) loader.getNamespace().get("gameReleaseLabel");
@@ -47,7 +44,6 @@ public class GameItemNodeFactory {
 		Button libraryButton = (Button) loader.getNamespace().get("libraryButton");
 		Button shareButton = (Button) loader.getNamespace().get("shareButton");
 
-		// Check if elements were loaded correctly
 		if (gameImageView == null || gameNameLabel == null || gameReleaseLabel == null ||
 				gameDetailsText == null || libraryButton == null || shareButton == null) {
 			System.err.println("Error: Could not find all expected elements in GameItem.fxml");
@@ -65,7 +61,7 @@ public class GameItemNodeFactory {
 			try {
 				details.append(String.format("%.1f", game.get("rating").getAsDouble())).append(" ★ | ");
 			} catch (NumberFormatException e) {
-				/* ignore if not a number */ }
+				 }
 		}
 		if (game.has("genres") && game.get("genres").isJsonArray()) {
 			details.append(
@@ -149,11 +145,10 @@ public class GameItemNodeFactory {
 		return gameItemRoot;
 	}
 
-	// Keep this utility tied to the factory that creates the button
 	public void updateLibraryButtonState(int gameId, Button button) {
 		if (button == null)
-			return; // Safety check
-		Platform.runLater(() -> { // Ensure UI update on FX thread
+			return; 
+		Platform.runLater(() -> { 
 			boolean inLibrary = libraryManager.isInLibrary(gameId);
 			String text = inLibrary ? "In Library" : "Add Library";
 			String iconName = inLibrary ? "REMOVE" : "ADD";

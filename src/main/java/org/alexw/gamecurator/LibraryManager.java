@@ -39,11 +39,11 @@ public class LibraryManager {
         boolean added = currentLibrary.add(gameId);
         if (added) {
             saveLibraryItemIds(currentLibrary);
-            // Ensure essential fields (name, genres) are present before caching
+
             if (gameData == null || !gameData.has("name") || !gameData.has("genres")) {
                 System.err.println("Warning: Caching game data for ID " + gameId + " without required fields (name, genres) for AI.");
             }
-            // Only cache if gameData is not null
+
             if (gameData != null) {
                  CacheManager.put("gameData_" + gameId, gameData.toString());
                  System.out.println("Added game " + gameId + " to library and cached data.");
@@ -79,7 +79,6 @@ public class LibraryManager {
         return getLibraryItemIds().contains(gameId);
     }
 
-    // Used by Settings Reset
     public void clearLibrary() {
         saveLibraryItemIds(new HashSet<>());
     }

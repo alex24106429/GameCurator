@@ -1,10 +1,9 @@
 package org.alexw.gamecurator;
 
-// Simple data class for page definition
 public class PageInfo {
     final String title;
     final String id;
-    final String iconName; // e.g., "STAR", "CALENDAR", "SEARCH", "LIBRARY", "SETTINGS", "AUTO_FIX"
+    final String iconName; 
 
     public PageInfo(String title, String id, String iconName) {
         this.title = title;

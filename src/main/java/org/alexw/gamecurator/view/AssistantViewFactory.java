@@ -23,60 +23,51 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.prefs.Preferences;
 
-// Implement the ViewFactory interface
 public class AssistantViewFactory implements ViewFactory {
 
     private final LibraryManager libraryManager;
     private final Preferences prefs;
     private static final String PREF_AI_RECOMMENDATIONS = "aiRecommendationsEnabled";
 
-
     public AssistantViewFactory(LibraryManager libraryManager, Preferences prefs) {
         this.libraryManager = libraryManager;
         this.prefs = prefs;
     }
 
-    // Rename method and add Override annotation
     @Override
     public Parent createView() {
         VBox assistantPane = new VBox(15);
         assistantPane.setPadding(new Insets(20));
         assistantPane.getStyleClass().add("assistant-pane");
 
-        // --- Controls ---
         Button getRecsButton = new Button("Get Recommendations");
         getRecsButton.setGraphic(IconFactory.createIcon("REFRESH", IconFactory.BUTTON_ICON_SIZE));
-        // Initial state check
+
         boolean aiEnabled = prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true);
         boolean libraryEmpty = libraryManager.getLibraryItemIds().isEmpty();
         getRecsButton.setDisable(!aiEnabled || libraryEmpty);
 
-
         ProgressIndicator loadingIndicator = new ProgressIndicator();
         loadingIndicator.setMaxSize(30, 30);
-        loadingIndicator.setVisible(false); // Initially hidden
+        loadingIndicator.setVisible(false); 
 
         HBox buttonArea = new HBox(10, getRecsButton, loadingIndicator);
         buttonArea.setAlignment(Pos.CENTER_LEFT);
 
-        // --- Results Display Area ---
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
-        VBox resultsContainer = new VBox(10); // Container for results text/list
+        VBox resultsContainer = new VBox(10); 
         resultsContainer.setPadding(new Insets(10));
         resultsContainer.getStyleClass().add("results-container");
         scrollPane.setContent(resultsContainer);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
-        // --- Initial Info / Status Label ---
         Label statusLabel = new Label();
-        updateStatusLabel(statusLabel, aiEnabled, libraryEmpty); // Set initial text
+        updateStatusLabel(statusLabel, aiEnabled, libraryEmpty); 
         resultsContainer.getChildren().add(statusLabel);
 
-
-        // --- Button Action ---
         getRecsButton.setOnAction(event -> {
-            // Re-check conditions before proceeding
+
             boolean currentAiEnabled = prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true);
             Set<Integer> libraryIds = libraryManager.getLibraryItemIds();
             boolean currentLibraryEmpty = libraryIds.isEmpty();
@@ -94,15 +85,12 @@ public class AssistantViewFactory implements ViewFactory {
                 return;
             }
 
-            // Start loading state
             getRecsButton.setDisable(true);
             loadingIndicator.setVisible(true);
             resultsContainer.getChildren().clear();
             Label generatingLabel = new Label("Generating recommendations... (This may take a moment)");
             resultsContainer.getChildren().add(generatingLabel);
 
-            // Call the AI Client asynchronously
-            // --- Build the prompt string first ---
             StringBuilder promptBuilder = new StringBuilder();
             int gamesProcessed = 0;
             for (int gameId : libraryIds) {
@@ -135,7 +123,7 @@ public class AssistantViewFactory implements ViewFactory {
 
             if (gamesProcessed == 0) {
                 System.err.println("Could not build prompt, no valid library game data found in cache.");
-                // Need to handle UI feedback here too
+
                 Platform.runLater(() -> {
                     loadingIndicator.setVisible(false);
                     resultsContainer.getChildren().remove(generatingLabel);
@@ -146,17 +134,15 @@ public class AssistantViewFactory implements ViewFactory {
                     updateStatusLabel(statusLabel, latestAiEnabled, latestLibraryEmpty);
                     resultsContainer.getChildren().add(statusLabel);
                 });
-                return; // Stop further processing
+                return; 
             }
             String userPrompt = promptBuilder.toString();
-            // --- End prompt building ---
 
             CompletableFuture<LLMClient.GameRecommendations> recommendationFuture =
                     LLMClient.getGameRecommendations(userPrompt);
 
             recommendationFuture.whenCompleteAsync((recommendations, error) -> {
-                // This block runs on the JavaFX Application Thread
-                // Re-enable button based on current state, not just completion
+
                 boolean latestAiEnabled = prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true);
                 boolean latestLibraryEmpty = libraryManager.getLibraryItemIds().isEmpty();
                 getRecsButton.setDisable(!latestAiEnabled || latestLibraryEmpty);
@@ -167,7 +153,7 @@ public class AssistantViewFactory implements ViewFactory {
                 if (error != null) {
                     resultsContainer.getChildren().add(new Label("Received error:" + error));
                 } else if (recommendations != null) {
-                    // Display successful recommendations
+
                     displayRecommendations(recommendations, resultsContainer);
                     updateStatusLabel(statusLabel, latestAiEnabled, latestLibraryEmpty);
                     resultsContainer.getChildren().add(statusLabel);
@@ -184,7 +170,6 @@ public class AssistantViewFactory implements ViewFactory {
         return assistantPane;
     }
 
-     // Helper to update the status label text
     private void updateStatusLabel(Label label, boolean aiEnabled, boolean libraryEmpty) {
         if (!aiEnabled) {
             label.setText("AI Recommendations are disabled in Settings.");
@@ -198,10 +183,8 @@ public class AssistantViewFactory implements ViewFactory {
         }
     }
 
-
-    // Helper method to display recommendations in the Assistant view
     private void displayRecommendations(LLMClient.GameRecommendations recommendations, VBox container) {
-        // Display Reasoning
+
         if (recommendations.getReasoning() != null && !recommendations.getReasoning().isBlank()) {
             Label reasoningHeader = new Label("AI Reasoning:");
             reasoningHeader.setStyle("-fx-font-weight: bold;");
@@ -211,7 +194,6 @@ public class AssistantViewFactory implements ViewFactory {
             container.getChildren().addAll(reasoningHeader, reasoningFlow);
         }
 
-        // Display Recommended Games List
         Label answerHeader = new Label("Recommendations:");
         answerHeader.setStyle("-fx-font-weight: bold;");
         container.getChildren().add(answerHeader);

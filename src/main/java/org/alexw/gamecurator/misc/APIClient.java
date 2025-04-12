@@ -12,24 +12,15 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Client for interacting with the RAWG API, handling caching via CacheManager.
- */
 public class APIClient {
 
-    // --- Configuration ---
-    private static final int GLOBAL_PAGE_SIZE = 100; // Default page size for API requests
+    private static final int GLOBAL_PAGE_SIZE = 100; 
 
-    // --- HTTP Client ---
-    // Create a single reusable HttpClient instance
     private static final HttpClient httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_2) // Use HTTP/2 if available
+            .version(HttpClient.Version.HTTP_2) 
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
-    // --- API Methods ---
-
-    // Fetches the top games from the RAWG API, using cache if available.
     public static CompletableFuture<String> getTopGames() {
         String apiKey = SettingsManager.getRawgApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -43,12 +34,10 @@ public class APIClient {
             return CompletableFuture.completedFuture(cachedData);
         }
 
-        // Not in cache or expired, fetch from API
         String url = String.format("https://api.rawg.io/api/games?key=%s&page_size=%d", apiKey, GLOBAL_PAGE_SIZE);
         return fetchAndCache(url, cacheKey);
     }
 
-    // Fetches new games from the RAWG API, using cache if available.
     public static CompletableFuture<String> getNewGames() {
         String apiKey = SettingsManager.getRawgApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -66,7 +55,6 @@ public class APIClient {
         return fetchAndCache(url, cacheKey);
     }
 
-    // Searches for games based on a query, using cache if available.
     public static CompletableFuture<String> searchGames(String searchQuery) {
         String apiKey = SettingsManager.getRawgApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -74,13 +62,11 @@ public class APIClient {
             return CompletableFuture.failedFuture(new IOException("RAWG API Key is not configured."));
         }
 
-        // Sanitize and validate input
         String sanitizedQuery = (searchQuery == null) ? "" : searchQuery.trim().toLowerCase();
         if (sanitizedQuery.isEmpty()) {
-            return CompletableFuture.completedFuture("[]"); // Return empty array for empty query
+            return CompletableFuture.completedFuture("[]"); 
         }
 
-        // Create cache key with normalized query
         String cacheKey = "search_" + sanitizedQuery.replaceAll("\\s+", "_");
         String cachedData = CacheManager.get(cacheKey);
         if (cachedData != null) {
@@ -92,7 +78,6 @@ public class APIClient {
 		return fetchAndCache(url, cacheKey);
     }
 
-    // --- Helper Method for Fetching and Caching ---
     private static CompletableFuture<String> fetchAndCache(String url, String cacheKey) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -107,10 +92,10 @@ public class APIClient {
                     if (response.statusCode() >= 200 && response.statusCode() < 300) {
                         String jsonBody = response.body();
                         try {
-                            // Use JsonParser to find the "results" array without mapping the whole structure
+
                             JsonObject parsedJson = JsonParser.parseString(jsonBody).getAsJsonObject();
                             if (parsedJson.has("results") && parsedJson.get("results").isJsonArray()) {
-                                String resultsJson = parsedJson.get("results").toString(); // Get the "results" array as a JSON string
+                                String resultsJson = parsedJson.get("results").toString(); 
                                 CacheManager.put(cacheKey, resultsJson);
                                 return resultsJson;
                             } else {
@@ -122,7 +107,7 @@ public class APIClient {
                             return "[]";
                         }
                     } else {
-                        // Handle non-successful HTTP status codes
+
                         System.err.println("API Error for key '" + cacheKey + "'. Status: " + response.statusCode() + ". Body: " + response.body() + ". URL: " + url);
                         return "[]";
                     }

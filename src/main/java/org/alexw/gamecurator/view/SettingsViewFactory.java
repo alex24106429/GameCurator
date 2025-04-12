@@ -19,17 +19,14 @@ import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
-// Implement the ViewFactory interface
 public class SettingsViewFactory implements ViewFactory {
 
     private final Preferences prefs;
     private final LibraryManager libraryManager;
     private final MainController mainController;
 
-    // Preference Keys
     private static final String PREF_AI_RECOMMENDATIONS = "aiRecommendationsEnabled";
 
-    // TextFields for API Keys to access them in the save handler
     private TextField llmApiKeyField;
     private TextField rawgApiKeyField;
 
@@ -39,30 +36,26 @@ public class SettingsViewFactory implements ViewFactory {
         this.mainController = mainController;
     }
 
-    // Rename method and add Override annotation
     @Override
     public Parent createView() {
         VBox settingsPane = new VBox(15);
         settingsPane.setPadding(new Insets(20));
         settingsPane.getStyleClass().add("settings-pane");
 
-        // --- API Keys Section ---
         settingsPane.getChildren().add(createSettingHeader("API Keys"));
         settingsPane.getChildren().add(createApiKeysSection());
 
-        // --- AI Features Section ---
         settingsPane.getChildren().add(createSettingHeader("AI Features"));
         CheckBox aiRecommendCheckBox = new CheckBox();
         aiRecommendCheckBox.setSelected(prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true));
         aiRecommendCheckBox.setOnAction(e -> {
             prefs.putBoolean(PREF_AI_RECOMMENDATIONS, aiRecommendCheckBox.isSelected());
             System.out.println("AI Recommendations setting changed to: " + aiRecommendCheckBox.isSelected());
-            // Refresh assistant page if visible to update button state immediately
+
             mainController.refreshCurrentPageIf("assistant");
         });
         settingsPane.getChildren().add(createSettingArea("AUTO_FIX", aiRecommendCheckBox, "Enable Recommendations", "Allow AI to generate game recommendations based on your library. Requires cached game data and a configured LLM API Key."));
 
-        // --- Data Section ---
         settingsPane.getChildren().add(createSettingHeader("Data Management"));
         Button clearCacheButton = new Button("Clear Cache");
         clearCacheButton.setOnAction(this::handleClearCache);
@@ -73,7 +66,6 @@ public class SettingsViewFactory implements ViewFactory {
         resetButton.setOnAction(this::handleResetApp);
         settingsPane.getChildren().add(createSettingArea("RESTORE", resetButton, "Reset Application", "Delete ALL cached data and reset ALL settings (including API keys and your game library). This action cannot be undone."));
 
-        // --- About Section ---
         settingsPane.getChildren().add(createSettingHeader("About"));
         settingsPane.getChildren().add(new Label("GameCurator v1.1.0"));
 
@@ -83,7 +75,6 @@ public class SettingsViewFactory implements ViewFactory {
         return scrollPane;
     }
 
-    // Helper to create the API Keys input section
     private Node createApiKeysSection() {
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -103,13 +94,11 @@ public class SettingsViewFactory implements ViewFactory {
         Button saveApiKeysButton = new Button("Save API Keys");
         saveApiKeysButton.setOnAction(this::handleSaveApiKeys);
 
-        // Layout in grid
         grid.add(llmKeyLabel, 0, 0);
         grid.add(llmApiKeyField, 1, 0);
         grid.add(rawgKeyLabel, 0, 1);
         grid.add(rawgApiKeyField, 1, 1);
 
-        // Add save button below, spanning columns or aligned right
         HBox buttonBox = new HBox(saveApiKeysButton);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
         buttonBox.setPadding(new Insets(10, 0, 0, 0));
@@ -118,7 +107,6 @@ public class SettingsViewFactory implements ViewFactory {
         return grid;
     }
 
-    // Action handler for saving API keys
     private void handleSaveApiKeys(ActionEvent event) {
         String llmKey = llmApiKeyField.getText();
         String rawgKey = rawgApiKeyField.getText();
@@ -132,8 +120,6 @@ public class SettingsViewFactory implements ViewFactory {
         mainController.refreshCurrentPageIf("assistant");
     }
 
-
-    // Helper to create a consistent setting row layout
     private Node createSettingArea(String iconIdentifier, Node control, String controlLabelText, String description) {
         HBox area = new HBox(15);
         area.setPadding(new Insets(5, 0, 5, 0));
@@ -163,7 +149,6 @@ public class SettingsViewFactory implements ViewFactory {
         return area;
     }
 
-    // Helper for section headers
     private Label createSettingHeader(String text) {
         Label header = new Label(text);
         header.getStyleClass().add("settings-header");
@@ -172,7 +157,6 @@ public class SettingsViewFactory implements ViewFactory {
         return header;
     }
 
-    // Action handler for clearing cache
     private void handleClearCache(ActionEvent event) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Clear Cache");
@@ -189,37 +173,32 @@ public class SettingsViewFactory implements ViewFactory {
         }
     }
 
-    // Action handler for resetting the application
     private void handleResetApp(ActionEvent event) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Reset Application");
         alert.setHeaderText("WARNING: This will delete ALL data!");
         alert.setContentText("Are you sure you want to reset the application? This includes your library, settings (including API keys), and all cached data. This action cannot be undone.");
-        // Make YES the more dangerous-looking button if possible, or just be clear
+
         ButtonType yesButton = new ButtonType("Yes, Reset Everything", ButtonBar.ButtonData.YES);
         ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(yesButton, cancelButton);
-
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == yesButton) {
             System.out.println("Resetting application...");
             try {
-                // Clear preferences first
+
                 SettingsManager.setLlmApiKey(null);
                 SettingsManager.setRawgApiKey(null);
                 prefs.clear();
                 prefs.flush();
 
-                // Clear library data managed by LibraryManager
                 libraryManager.clearLibrary();
 
-                // Clear file-based cache
                 CacheManager.clear();
 
-                // Use the MainController reference to switch page and show dialog AFTER reset logic
                 Platform.runLater(() -> {
-                    mainController.switchPage("settings"); // This should reload the view with empty fields
+                    mainController.switchPage("settings"); 
                     DialogUtils.showInfoDialog("Application Reset", "All data has been cleared. Settings reset to default.");
                     mainController.refreshCurrentPageIf("library");
                     mainController.refreshCurrentPageIf("assistant");

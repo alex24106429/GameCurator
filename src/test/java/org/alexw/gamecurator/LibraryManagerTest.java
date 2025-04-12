@@ -29,20 +29,15 @@ class LibraryManagerTest {
     @Mock
     private Preferences mockPrefs;
 
-    private Gson gson; // Use real Gson
+    private Gson gson; 
     private LibraryManager libraryManager;
 
     @BeforeEach
     void setUp() {
-        gson = new Gson(); // Initialize real Gson
-        // Reset static cache before each test to ensure isolation
-        // Note: This assumes CacheManager has a clear or reset method.
-        // If not, tests involving cache might interfere.
-        // CacheManager.clear(); // Example - adjust if CacheManager API differs
+        gson = new Gson(); 
+
         libraryManager = new LibraryManager(mockPrefs, gson);
     }
-
-    // --- Test getLibraryItemIds ---
 
     @Test
     void getLibraryItemIds_whenNoPreference_returnsEmptySet() {
@@ -66,27 +61,23 @@ class LibraryManagerTest {
     @Test
     void getLibraryItemIds_whenPreferenceInvalidJson_returnsEmptySet() {
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn("[invalid json}");
-        // No exception should be thrown, should return empty set gracefully
+
         Set<Integer> ids = libraryManager.getLibraryItemIds();
         assertNotNull(ids);
         assertTrue(ids.isEmpty());
-        // Optionally, verify error was logged (if logging framework was used)
-    }
 
-    // --- Test addLibraryItem ---
+    }
 
     @Test
     void addLibraryItem_whenNewItem_addsIdAndSaves() throws BackingStoreException {
-        // Arrange: Start with empty library
+
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn("[]");
         JsonObject gameData = new JsonObject();
         gameData.addProperty("name", "Test Game");
-        gameData.addProperty("genres", "Action"); // Add required fields
+        gameData.addProperty("genres", "Action"); 
 
-        // Act
         boolean added = libraryManager.addLibraryItem(GAME_ID_1, gameData);
 
-        // Assert
         assertTrue(added);
         ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockPrefs).put(eq(PREF_LIBRARY), jsonCaptor.capture());
@@ -96,18 +87,15 @@ class LibraryManagerTest {
         assertTrue(savedIds.contains(GAME_ID_1));
         assertEquals(1, savedIds.size());
 
-        // We can't easily verify static CacheManager.put, but ensure no NPE etc.
     }
 
      @Test
     void addLibraryItem_whenNewItemWithNullData_addsIdAndSavesWithoutCacheError() throws BackingStoreException {
-        // Arrange: Start with empty library
+
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn("[]");
 
-        // Act
-        boolean added = libraryManager.addLibraryItem(GAME_ID_1, null); // Pass null gameData
+        boolean added = libraryManager.addLibraryItem(GAME_ID_1, null); 
 
-        // Assert
         assertTrue(added);
         ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockPrefs).put(eq(PREF_LIBRARY), jsonCaptor.capture());
@@ -116,40 +104,34 @@ class LibraryManagerTest {
         Set<Integer> savedIds = gson.fromJson(jsonCaptor.getValue(), new com.google.gson.reflect.TypeToken<Set<Integer>>() {}.getType());
         assertTrue(savedIds.contains(GAME_ID_1));
         assertEquals(1, savedIds.size());
-        // Verify CacheManager.put was NOT called implicitly by checking no NPE occurred
+
     }
 
     @Test
     void addLibraryItem_whenExistingItem_returnsFalseAndDoesNotSave() throws BackingStoreException {
-        // Arrange: Library already contains GAME_ID_1
+
         Set<Integer> existingIds = new HashSet<>(Collections.singletonList(GAME_ID_1));
         String json = gson.toJson(existingIds);
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn(json);
-        JsonObject gameData = new JsonObject(); // Data doesn't matter here
+        JsonObject gameData = new JsonObject(); 
 
-        // Act
         boolean added = libraryManager.addLibraryItem(GAME_ID_1, gameData);
 
-        // Assert
         assertFalse(added);
         verify(mockPrefs, never()).put(anyString(), anyString());
         verify(mockPrefs, never()).flush();
-        // Verify CacheManager.put was NOT called
-    }
 
-    // --- Test removeLibraryItem ---
+    }
 
     @Test
     void removeLibraryItem_whenItemExists_removesIdAndSaves() throws BackingStoreException {
-        // Arrange: Library contains GAME_ID_1 and GAME_ID_2
+
         Set<Integer> existingIds = new HashSet<>(Arrays.asList(GAME_ID_1, GAME_ID_2));
         String json = gson.toJson(existingIds);
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn(json);
 
-        // Act
         boolean removed = libraryManager.removeLibraryItem(GAME_ID_1);
 
-        // Assert
         assertTrue(removed);
         ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockPrefs).put(eq(PREF_LIBRARY), jsonCaptor.capture());
@@ -159,27 +141,23 @@ class LibraryManagerTest {
         assertFalse(savedIds.contains(GAME_ID_1));
         assertTrue(savedIds.contains(GAME_ID_2));
         assertEquals(1, savedIds.size());
-        // We can't easily verify static CacheManager.remove
+
     }
 
     @Test
     void removeLibraryItem_whenItemDoesNotExist_returnsFalseAndDoesNotSave() throws BackingStoreException {
-        // Arrange: Library contains only GAME_ID_2
+
         Set<Integer> existingIds = new HashSet<>(Collections.singletonList(GAME_ID_2));
         String json = gson.toJson(existingIds);
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn(json);
 
-        // Act
-        boolean removed = libraryManager.removeLibraryItem(GAME_ID_1); // Try to remove non-existent ID
+        boolean removed = libraryManager.removeLibraryItem(GAME_ID_1); 
 
-        // Assert
         assertFalse(removed);
         verify(mockPrefs, never()).put(anyString(), anyString());
         verify(mockPrefs, never()).flush();
-        // Verify CacheManager.remove was NOT called
-    }
 
-    // --- Test isInLibrary ---
+    }
 
     @Test
     void isInLibrary_whenItemExists_returnsTrue() {
@@ -205,16 +183,11 @@ class LibraryManagerTest {
         assertFalse(libraryManager.isInLibrary(GAME_ID_1));
     }
 
-    // --- Test clearLibrary ---
-
     @Test
     void clearLibrary_savesEmptySet() throws BackingStoreException {
-        // Arrange (no stubbing needed for get as clearLibrary doesn't read)
 
-        // Act
         libraryManager.clearLibrary();
 
-        // Assert
         ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockPrefs).put(eq(PREF_LIBRARY), jsonCaptor.capture());
         verify(mockPrefs).flush();
@@ -223,57 +196,47 @@ class LibraryManagerTest {
         assertTrue(savedIds.isEmpty());
     }
 
-    // --- Test Exception Handling ---
-
     @Test
     void addLibraryItem_whenFlushThrowsException_propagatesOrLogs() throws BackingStoreException {
-        // Arrange: Start with empty library
+
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn("[]");
         JsonObject gameData = new JsonObject();
         gameData.addProperty("name", "Test Game");
         gameData.addProperty("genres", "Action");
-        // Configure mock to throw exception on flush
+
         doThrow(new BackingStoreException("Disk full")).when(mockPrefs).flush();
 
-        // Act & Assert
-        // Depending on desired behavior: either assert the exception is caught and logged
-        // (and addLibraryItem returns true/false appropriately), or expect it to propagate.
-        // Current implementation catches and logs. Let's verify put was called, but flush failed.
         boolean added = libraryManager.addLibraryItem(GAME_ID_1, gameData);
 
-        assertTrue(added); // Item is added to set before flush fails
+        assertTrue(added); 
         verify(mockPrefs).put(eq(PREF_LIBRARY), anyString());
-        verify(mockPrefs).flush(); // Verify flush was attempted
-        // Optionally verify error log output if possible
+        verify(mockPrefs).flush(); 
+
     }
 
      @Test
     void removeLibraryItem_whenFlushThrowsException_propagatesOrLogs() throws BackingStoreException {
-        // Arrange: Library contains GAME_ID_1
+
         Set<Integer> existingIds = new HashSet<>(Collections.singletonList(GAME_ID_1));
         String json = gson.toJson(existingIds);
         when(mockPrefs.get(PREF_LIBRARY, "[]")).thenReturn(json);
         doThrow(new BackingStoreException("Disk full")).when(mockPrefs).flush();
 
-        // Act
         boolean removed = libraryManager.removeLibraryItem(GAME_ID_1);
 
-        // Assert
-        assertTrue(removed); // Item is removed from set before flush fails
+        assertTrue(removed); 
         verify(mockPrefs).put(eq(PREF_LIBRARY), anyString());
-        verify(mockPrefs).flush(); // Verify flush was attempted
+        verify(mockPrefs).flush(); 
     }
 
      @Test
     void clearLibrary_whenFlushThrowsException_propagatesOrLogs() throws BackingStoreException {
-        // Arrange
+
         doThrow(new BackingStoreException("Disk full")).when(mockPrefs).flush();
 
-        // Act
-        libraryManager.clearLibrary(); // Should not throw exception itself
+        libraryManager.clearLibrary(); 
 
-        // Assert
-        verify(mockPrefs).put(eq(PREF_LIBRARY), eq("[]")); // Verify put was called with empty set
-        verify(mockPrefs).flush(); // Verify flush was attempted
+        verify(mockPrefs).put(eq(PREF_LIBRARY), eq("[]")); 
+        verify(mockPrefs).flush(); 
     }
 }

@@ -58,11 +58,10 @@ public class MainController implements Initializable {
             new PageInfo("Settings", "settings", "SETTINGS")
     );
 
-    // Managers and Factories
     LibraryManager libraryManager;
     GameItemNodeFactory gameItemNodeFactory;
-    GameListViewFactory gameListViewFactory; // Keep separate as it needs parameters
-    // Use a map for factories implementing the ViewFactory interface
+    GameListViewFactory gameListViewFactory; 
+
     private final Map<String, ViewFactory> viewFactories = new HashMap<>();
 
     @Override
@@ -72,7 +71,6 @@ public class MainController implements Initializable {
         gameItemNodeFactory = new GameItemNodeFactory(libraryManager, this);
         gameListViewFactory = new GameListViewFactory(gameItemNodeFactory);
 
-        // Instantiate and populate the map with factories implementing ViewFactory
         viewFactories.put("search", new SearchViewFactory(gameItemNodeFactory));
         viewFactories.put("library", new LibraryViewFactory(libraryManager, gameItemNodeFactory));
         viewFactories.put("assistant", new AssistantViewFactory(libraryManager, prefs));
@@ -192,7 +190,6 @@ public class MainController implements Initializable {
         minPlaytimeFilterField.clear();
         maxPlaytimeFilterField.clear();
 
-        // Re-apply filters (which will now be empty) to refresh the view
         applyFilters();
     }
 
@@ -224,7 +221,6 @@ public class MainController implements Initializable {
         Optional<PageInfo> pageInfo = pages.stream().filter(p -> p.getId().equals(pageId)).findFirst();
         titleLabel.setText(pageInfo.map(PageInfo::getTitle).orElse("Unknown Page"));
 
-        // Disable the currently active navigation button
         for (Node node : navigationBox.getChildren()) {
             if (node instanceof Button) {
                 Button navButton = (Button) node;
@@ -235,7 +231,6 @@ public class MainController implements Initializable {
             }
         }
 
-        // Show/hide filter bar based on page
         boolean showFilters = "top_games".equals(pageId) || "new_games".equals(pageId);
         if (filterBar != null) {
             filterBar.setVisible(showFilters);
@@ -243,18 +238,16 @@ public class MainController implements Initializable {
             updateClearButtonState();
         }
 
-        // Show loading indicator
         contentPane.getChildren().clear();
         ProgressIndicator loadingIndicator = new ProgressIndicator(-1.0);
         loadingIndicator.setMaxSize(50, 50);
         contentPane.getChildren().add(loadingIndicator);
         StackPane.setAlignment(loadingIndicator, Pos.CENTER);
 
-        // Task to load page content asynchronously
         Task<Parent> loadTask = new Task<>() {
             @Override
             protected Parent call() throws Exception {
-                // Handle pages requiring specific data separately
+
                 if ("top_games".equals(pageId)) {
                     String topJson = APIClient.getTopGames().join();
                     return gameListViewFactory.createGameListView(topJson, selectedGenres, minPlaytime, maxPlaytime);
@@ -262,12 +255,12 @@ public class MainController implements Initializable {
                     String newJson = APIClient.getNewGames().join();
                     return gameListViewFactory.createGameListView(newJson, selectedGenres, minPlaytime, maxPlaytime);
                 } else {
-                    // Use the map for pages implementing ViewFactory
+
                     ViewFactory factory = viewFactories.get(pageId);
                     if (factory != null) {
                         return factory.createView();
                     } else {
-                        // Fallback for unknown pages
+
                         System.err.println("No view factory found for page ID: " + pageId);
                         return new VBox(new Label("Content for " + pageId + " not implemented or factory missing."));
                     }
@@ -303,7 +296,6 @@ public class MainController implements Initializable {
         new Thread(loadTask).start();
     }
 
-    // Called by GameItemNodeFactory when the library button is clicked
     public void handleLibraryToggle(int gameId, JsonObject gameData) {
         boolean wasInLibrary = libraryManager.isInLibrary(gameId);
         boolean changed;
@@ -313,14 +305,13 @@ public class MainController implements Initializable {
             changed = libraryManager.addLibraryItem(gameId, gameData);
         }
         if (changed) {
-             // Refresh library view if it's the current page
+
              refreshCurrentPageIf("library");
-             // Refresh assistant view if it's the current page (as recommendations depend on library)
+
              refreshCurrentPageIf("assistant");
         }
     }
 
-    // Called by GameItemNodeFactory when the share button is clicked
     public void handleShareGame(JsonObject game) {
         if (game == null) return;
 
@@ -335,7 +326,7 @@ public class MainController implements Initializable {
         } else if (game.has("id") && game.get("id").isJsonPrimitive()) {
             try {
                 gameSlugOrId = game.get("id").getAsString();
-            } catch (UnsupportedOperationException | NumberFormatException e) { /* ignore */ }
+            } catch (UnsupportedOperationException | NumberFormatException e) {  }
         }
 
         String gameUrl = "https://rawg.io/games/" + gameSlugOrId;
@@ -358,13 +349,10 @@ public class MainController implements Initializable {
         }
     }
 
-    // Refreshes the current page content if its ID matches the provided one.
-    // Useful for updating views after data changes (e.g., library updates, filter changes).
     public void refreshCurrentPageIf(String pageIdToRefresh) {
         if (pageIdToRefresh != null && pageIdToRefresh.equals(this.currentPageId)) {
             System.out.println("Refreshing current page due to filter change or external event: " + pageIdToRefresh);
 
-            // Re-run the switchPage logic for the current page to reload its content
             Platform.runLater(() -> switchPage(this.currentPageId));
         }
     }

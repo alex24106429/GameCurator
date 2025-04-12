@@ -17,7 +17,6 @@ import org.alexw.gamecurator.util.IconFactory;
 
 import java.io.IOException;
 
-// Implement the ViewFactory interface
 public class SearchViewFactory implements ViewFactory {
 
     private final GameItemNodeFactory gameItemNodeFactory;
@@ -26,7 +25,6 @@ public class SearchViewFactory implements ViewFactory {
         this.gameItemNodeFactory = gameItemNodeFactory;
     }
 
-    // Rename method and add Override annotation
     @Override
     public Parent createView() {
         VBox searchPane = new VBox(10);
@@ -48,7 +46,6 @@ public class SearchViewFactory implements ViewFactory {
         searchButton.setContentDisplay(ContentDisplay.LEFT);
         searchButton.setDefaultButton(true);
 
-        // Link actions to the performSearch method within this factory
         searchBox.setOnAction(event -> performSearch(searchBox.getText(), resultsContainer, searchButton));
         searchButton.setOnAction(event -> performSearch(searchBox.getText(), resultsContainer, searchButton));
 
@@ -72,11 +69,9 @@ public class SearchViewFactory implements ViewFactory {
         searchButton.setText("Searching...");
         ProgressIndicator loadingIndicator = new ProgressIndicator();
         loadingIndicator.setMaxSize(40, 40);
-        // Add indicator centered? Or just at the top? Top is simpler.
+
         resultsContainer.getChildren().add(loadingIndicator);
 
-
-        // Use CompletableFuture for API call
         APIClient.searchGames(trimmedQuery)
                 .whenCompleteAsync((jsonResult, error) -> {
                     resultsContainer.getChildren().clear();
@@ -100,17 +95,17 @@ public class SearchViewFactory implements ViewFactory {
                                 resultsContainer.getChildren().add(new Label("Your search for '" + trimmedQuery + "' returned no results."));
                                 return;
                             }
-                            resultsContainer.getChildren().add(new Label("Found " + gamesArray.size() + " results for '" + trimmedQuery + "':")); // Show result count
+                            resultsContainer.getChildren().add(new Label("Found " + gamesArray.size() + " results for '" + trimmedQuery + "':")); 
                             for (JsonElement gameElement : gamesArray) {
                                 if (gameElement.isJsonObject()) {
                                     JsonObject game = gameElement.getAsJsonObject();
                                     try {
-                                        // Use the injected factory to create nodes
+
                                         resultsContainer.getChildren().add(gameItemNodeFactory.createGameItemNode(game));
                                     } catch (IOException e) {
                                         System.err.println("Error creating game item node during search: " + e.getMessage());
                                         resultsContainer.getChildren().add(new Label("Error loading game item."));
-                                    } catch (Exception e) { // Catch broader exceptions during node creation
+                                    } catch (Exception e) { 
                                          System.err.println("Unexpected error creating game item node during search: " + e.getMessage());
                                          e.printStackTrace();
                                          resultsContainer.getChildren().add(new Label("Error displaying a game item."));
@@ -125,7 +120,7 @@ public class SearchViewFactory implements ViewFactory {
                         } catch (IllegalStateException e) {
                              System.err.println("Error processing search results structure: " + e.getMessage());
                              resultsContainer.getChildren().add(new Label("Error processing search results structure."));
-                        } catch (Exception e) { // Catch any other unexpected errors
+                        } catch (Exception e) { 
                             System.err.println("Unexpected error processing search results: " + e.getMessage());
                             e.printStackTrace();
                             resultsContainer.getChildren().add(new Label("An unexpected error occurred displaying search results."));
