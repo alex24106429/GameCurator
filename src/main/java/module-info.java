@@ -8,6 +8,7 @@ module org.alexw.gamecurator {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.materialdesign;
     requires javafx.controls;
+    requires org.controlsfx.controls; // Added ControlsFX module
 
 
     // Keep your existing opens directive for JavaFX FXML
