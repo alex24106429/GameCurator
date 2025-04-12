@@ -21,11 +21,11 @@ import java.util.prefs.Preferences;
 
 public class SettingsViewFactory {
 
-    private final Preferences prefs; // Still needed for AI toggle? Or move that to SettingsManager too? Keep for now.
-    private final LibraryManager libraryManager; // Needed for reset
-    private final MainController mainController; // Needed for page refresh after reset
+    private final Preferences prefs;
+    private final LibraryManager libraryManager;
+    private final MainController mainController;
 
-    // Preference Keys (centralize if used elsewhere)
+    // Preference Keys
     private static final String PREF_AI_RECOMMENDATIONS = "aiRecommendationsEnabled";
 
     // TextFields for API Keys to access them in the save handler
@@ -50,7 +50,7 @@ public class SettingsViewFactory {
         // --- AI Features Section ---
         settingsPane.getChildren().add(createSettingHeader("AI Features"));
         CheckBox aiRecommendCheckBox = new CheckBox();
-        aiRecommendCheckBox.setSelected(prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true)); // Default true
+        aiRecommendCheckBox.setSelected(prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true));
         aiRecommendCheckBox.setOnAction(e -> {
             prefs.putBoolean(PREF_AI_RECOMMENDATIONS, aiRecommendCheckBox.isSelected());
             System.out.println("AI Recommendations setting changed to: " + aiRecommendCheckBox.isSelected());
@@ -66,18 +66,17 @@ public class SettingsViewFactory {
         settingsPane.getChildren().add(createSettingArea("DELETE", clearCacheButton, "Clear Cache", "Delete cached API data, images, and AI recommendations. Your library list and settings (including API keys) are kept."));
 
         Button resetButton = new Button("Reset App");
-        resetButton.setStyle("-fx-text-fill: red;"); // Style for danger
+        resetButton.setStyle("-fx-text-fill: red;");
         resetButton.setOnAction(this::handleResetApp);
         settingsPane.getChildren().add(createSettingArea("RESTORE", resetButton, "Reset Application", "Delete ALL cached data and reset ALL settings (including API keys and your game library). This action cannot be undone."));
 
         // --- About Section ---
         settingsPane.getChildren().add(createSettingHeader("About"));
-        // Consider loading version from a properties file or MANIFEST.MF
         settingsPane.getChildren().add(new Label("GameCurator v1.1.0"));
 
         ScrollPane scrollPane = new ScrollPane(settingsPane);
         scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); // Avoid horizontal scrollbar
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
     }
 
@@ -86,15 +85,15 @@ public class SettingsViewFactory {
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(8);
-        grid.setPadding(new Insets(5, 0, 15, 0)); // Padding below section
+        grid.setPadding(new Insets(5, 0, 15, 0));
 
         Label llmKeyLabel = new Label("Gemini API Key:");
-        llmApiKeyField = new TextField(SettingsManager.getLlmApiKey()); // Load initial value
+        llmApiKeyField = new TextField(SettingsManager.getLlmApiKey());
         llmApiKeyField.setPromptText("Enter your Gemini API Key");
         GridPane.setHgrow(llmApiKeyField, Priority.ALWAYS);
 
         Label rawgKeyLabel = new Label("RAWG API Key:");
-        rawgApiKeyField = new TextField(SettingsManager.getRawgApiKey()); // Load initial value
+        rawgApiKeyField = new TextField(SettingsManager.getRawgApiKey());
         rawgApiKeyField.setPromptText("Enter your RAWG API Key");
         GridPane.setHgrow(rawgApiKeyField, Priority.ALWAYS);
 
@@ -110,8 +109,8 @@ public class SettingsViewFactory {
         // Add save button below, spanning columns or aligned right
         HBox buttonBox = new HBox(saveApiKeysButton);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
-        buttonBox.setPadding(new Insets(10, 0, 0, 0)); // Top padding for button
-        grid.add(buttonBox, 0, 2, 2, 1); // Span 2 columns
+        buttonBox.setPadding(new Insets(10, 0, 0, 0));
+        grid.add(buttonBox, 0, 2, 2, 1);
 
         return grid;
     }
@@ -127,9 +126,7 @@ public class SettingsViewFactory {
         System.out.println("API Keys saved.");
         DialogUtils.showInfoDialog("API Keys Saved", "Your API keys have been saved successfully.");
 
-        // Optionally, refresh other views if they depend on the keys being present
-        // e.g., re-enable buttons or trigger checks
-        mainController.refreshCurrentPageIf("assistant"); // Refresh assistant if it depends on LLM key
+        mainController.refreshCurrentPageIf("assistant");
     }
 
 
@@ -142,7 +139,7 @@ public class SettingsViewFactory {
 
         Node icon = IconFactory.createIcon(iconIdentifier, IconFactory.SETTINGS_ICON_SIZE);
         HBox iconContainer = new HBox(icon);
-        iconContainer.setMinWidth(30); // Give icon some space
+        iconContainer.setMinWidth(30);
         iconContainer.setAlignment(Pos.CENTER);
 
         VBox descriptionBox = new VBox(2);
@@ -151,28 +148,23 @@ public class SettingsViewFactory {
 
         Label descLabel = new Label(description);
         descLabel.setWrapText(true);
-        // descLabel.setMaxWidth(350); // Let VBox/HBox manage width
         VBox.setVgrow(descLabel, Priority.ALWAYS);
         descriptionBox.getChildren().addAll(controlLabel, descLabel);
-        HBox.setHgrow(descriptionBox, Priority.ALWAYS); // Let description take available space
-
-        Region spacer = new Region();
-        // HBox.setHgrow(spacer, Priority.ALWAYS); // Use Hgrow on descriptionBox instead
+        HBox.setHgrow(descriptionBox, Priority.ALWAYS);
 
         HBox controlContainer = new HBox(control);
         controlContainer.setAlignment(Pos.CENTER_RIGHT);
-        controlContainer.setMinWidth(Region.USE_PREF_SIZE); // Ensure control doesn't get squashed
+        controlContainer.setMinWidth(Region.USE_PREF_SIZE);
 
-        area.getChildren().addAll(iconContainer, descriptionBox, /*spacer,*/ controlContainer);
+        area.getChildren().addAll(iconContainer, descriptionBox, controlContainer);
         return area;
     }
 
     // Helper for section headers
     private Label createSettingHeader(String text) {
         Label header = new Label(text);
-        header.getStyleClass().add("settings-header"); // Use CSS for styling
-        header.setMaxWidth(Double.MAX_VALUE); // Ensure it spans width
-        // Add padding/margin via CSS or here
+        header.getStyleClass().add("settings-header");
+        header.setMaxWidth(Double.MAX_VALUE);
         header.setPadding(new Insets(10, 0, 5, 0));
         return header;
     }
@@ -183,15 +175,14 @@ public class SettingsViewFactory {
         alert.setTitle("Clear Cache");
         alert.setHeaderText("Are you sure you want to clear the cache?");
         alert.setContentText("This will remove temporary data (API responses, images, AI results) but keep your library list and settings (including API keys).");
-        alert.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL); // Explicit buttons
+        alert.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             System.out.println("Clearing cache...");
             CacheManager.clear();
             DialogUtils.showInfoDialog("Cache Cleared", "Application cache has been cleared.");
-            // Refresh assistant page if visible to clear any displayed results
-             mainController.refreshCurrentPageIf("assistant");
+			mainController.refreshCurrentPageIf("assistant");
         }
     }
 
@@ -211,27 +202,22 @@ public class SettingsViewFactory {
         if (result.isPresent() && result.get() == yesButton) {
             System.out.println("Resetting application...");
             try {
-                // Clear preferences first (includes API keys managed by SettingsManager now)
-                SettingsManager.setLlmApiKey(null); // Explicitly clear keys via manager
+                // Clear preferences first
+                SettingsManager.setLlmApiKey(null);
                 SettingsManager.setRawgApiKey(null);
-                prefs.clear(); // Clear other prefs like AI toggle
-                prefs.flush(); // Ensure changes are written
+                prefs.clear();
+                prefs.flush();
 
                 // Clear library data managed by LibraryManager
                 libraryManager.clearLibrary();
 
                 // Clear file-based cache
-                CacheManager.clear(); // Clear all cached files/data
+                CacheManager.clear();
 
                 // Use the MainController reference to switch page and show dialog AFTER reset logic
                 Platform.runLater(() -> {
-                    // Re-initialize or refresh necessary parts of MainController if needed
-                    // For now, just switch page which reloads settings view with defaults
                     mainController.switchPage("settings"); // This should reload the view with empty fields
                     DialogUtils.showInfoDialog("Application Reset", "All data has been cleared. Settings reset to default.");
-                    // Also refresh navigation bar in case defaults changed something visual? Unlikely here.
-                    // mainController.setupNavigationBar(); // If needed
-                    // Refresh other pages too?
                     mainController.refreshCurrentPageIf("library");
                     mainController.refreshCurrentPageIf("assistant");
                 });
@@ -239,10 +225,9 @@ public class SettingsViewFactory {
                 System.err.println("Error clearing preferences during reset: " + e.getMessage());
                 DialogUtils.showErrorDialog("Reset Error", "Could not clear all settings: " + e.getMessage());
             } catch (Exception e) {
-                // Catch other potential errors during reset
                 System.err.println("Error during application reset: " + e.getMessage());
                 e.printStackTrace();
-                 DialogUtils.showErrorDialog("Reset Error", "An unexpected error occurred during reset: " + e.getMessage());
+				DialogUtils.showErrorDialog("Reset Error", "An unexpected error occurred during reset: " + e.getMessage());
             }
         }
     }

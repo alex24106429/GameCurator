@@ -13,7 +13,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import org.alexw.gamecurator.LibraryManager;
-import org.alexw.gamecurator.misc.CacheManager; // Assuming CacheManager location
+import org.alexw.gamecurator.misc.CacheManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class LibraryViewFactory {
         VBox libraryContainer = new VBox(10);
         libraryContainer.setPadding(new Insets(10));
         libraryContainer.getStyleClass().add("game-list-container");
-        libraryContainer.setId("libraryItemsContainer"); // Keep ID for refresh updates
+        libraryContainer.setId("libraryItemsContainer");
 
         // Load library items asynchronously after the view structure is created
         loadLibraryItems(libraryContainer);
@@ -50,17 +50,17 @@ public class LibraryViewFactory {
 
     // Make this public if MainController needs to trigger a refresh directly
     public void loadLibraryItems(VBox libraryContainer) {
-        libraryContainer.getChildren().clear(); // Clear previous items/loading state
+        libraryContainer.getChildren().clear();
         Set<Integer> libraryItemIds = libraryManager.getLibraryItemIds();
 
         if (libraryItemIds.isEmpty()) {
             libraryContainer.getChildren().add(new Label("You have no games in your library yet."));
-            return; // Nothing to load
+            return;
         }
 
         ProgressIndicator loadingIndicator = new ProgressIndicator();
         loadingIndicator.setMaxSize(40, 40);
-        libraryContainer.getChildren().add(loadingIndicator); // Show loading indicator
+        libraryContainer.getChildren().add(loadingIndicator);
 
         // Task to fetch/process cached data in the background
         Task<List<Node>> loadLibraryTask = new Task<>() {
@@ -86,8 +86,6 @@ public class LibraryViewFactory {
                         }
                     } else {
                         System.out.println("Data for game ID: " + gameId + " not found in cache. Cannot display.");
-                        // Don't show an error for missing cache, just skip the item.
-                        // errorMessages.add("Data for game ID: " + gameId + " not found.");
                     }
                 }
 
@@ -97,9 +95,9 @@ public class LibraryViewFactory {
                 ));
 
 
-                // Create UI Nodes - MUST be done on FX thread after data is collected
+                // Create UI Nodes
                 List<Node> gameNodes = new ArrayList<>();
-                CountDownLatch latch = new CountDownLatch(1); // Use latch to wait for Platform.runLater
+                CountDownLatch latch = new CountDownLatch(1);
                 Platform.runLater(() -> {
                     try {
                         for (JsonObject game : gameDataList) {
@@ -108,7 +106,7 @@ public class LibraryViewFactory {
                             } catch (IOException e) {
                                 System.err.println("Error creating node for library game: " + e.getMessage());
                                 gameNodes.add(new Label("Error displaying game: " + getGameIdentifier(game)));
-                            } catch (Exception e) { // Catch broader exceptions during node creation
+                            } catch (Exception e) {
                                  System.err.println("Unexpected error creating node for library game: " + e.getMessage());
                                  e.printStackTrace();
                                  gameNodes.add(new Label("Error displaying game: " + getGameIdentifier(game)));
@@ -117,14 +115,14 @@ public class LibraryViewFactory {
                         // Add error messages at the end
                         for(String error : errorMessages) {
                             Label errorLabel = new Label(error);
-                            errorLabel.setStyle("-fx-text-fill: orange;"); // Style errors differently
+                            errorLabel.setStyle("-fx-text-fill: orange;");
                             gameNodes.add(errorLabel);
                         }
                     } finally {
-                        latch.countDown(); // Release latch whether success or error in runLater
+                        latch.countDown();
                     }
                 });
-                latch.await(); // Wait for Platform.runLater to complete
+                latch.await();
                 return gameNodes;
             }
 
@@ -138,7 +136,7 @@ public class LibraryViewFactory {
         };
 
         loadLibraryTask.setOnSucceeded(event -> {
-            libraryContainer.getChildren().clear(); // Remove indicator
+            libraryContainer.getChildren().clear();
             List<Node> nodes = loadLibraryTask.getValue();
             if (nodes.isEmpty() && !libraryItemIds.isEmpty()){
                  // This means cache was missing for all items or errors occurred for all
@@ -152,7 +150,7 @@ public class LibraryViewFactory {
         });
 
         loadLibraryTask.setOnFailed(event -> {
-            libraryContainer.getChildren().clear(); // Remove indicator
+            libraryContainer.getChildren().clear();
             Throwable ex = loadLibraryTask.getException();
             ex.printStackTrace();
             Label errorLabel = new Label("Error loading library items: " + ex.getMessage());

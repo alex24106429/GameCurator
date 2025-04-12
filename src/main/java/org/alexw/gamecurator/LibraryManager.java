@@ -3,7 +3,7 @@ package org.alexw.gamecurator;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import org.alexw.gamecurator.misc.CacheManager; // Assuming CacheManager is in misc package
+import org.alexw.gamecurator.misc.CacheManager;
 
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -34,7 +34,6 @@ public class LibraryManager {
         }
     }
 
-    // IMPORTANT: Ensure gameData includes 'name' and 'genres' for the AI prompt
     public boolean addLibraryItem(int gameId, JsonObject gameData) {
         Set<Integer> currentLibrary = getLibraryItemIds();
         boolean added = currentLibrary.add(gameId);
@@ -60,9 +59,7 @@ public class LibraryManager {
         boolean removed = currentLibrary.remove(gameId);
         if (removed) {
             saveLibraryItemIds(currentLibrary);
-            CacheManager.remove("gameData_" + gameId); // Remove detailed cache entry
-            // Also potentially clear AI recommendations cache as it's now stale
-            clearRecommendationsCache();
+            CacheManager.remove("gameData_" + gameId);
             System.out.println("Removed game " + gameId + " from library and cache.");
         }
         return removed;
@@ -82,20 +79,8 @@ public class LibraryManager {
         return getLibraryItemIds().contains(gameId);
     }
 
-    // Helper to clear recommendation caches when library changes
-    private void clearRecommendationsCache() {
-        // We don't know the exact cache key without recalculating the hash.
-        // A simple approach is to remove *all* recommendation caches.
-        // A better CacheManager might support prefix removal.
-        // For now, we can't easily target the specific stale cache entry without
-        // recalculating the old hash before removing the item.
-        System.out.println("Library changed. AI recommendation cache might be stale.");
-        // If CacheManager had a prefix removal: CacheManager.removeByPrefix("recommendations_");
-    }
-
     // Used by Settings Reset
     public void clearLibrary() {
         saveLibraryItemIds(new HashSet<>());
-        // Note: CacheManager.clear() needs to be called separately if resetting app
     }
 }

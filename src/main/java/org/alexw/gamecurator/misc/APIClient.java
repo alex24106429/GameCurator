@@ -3,7 +3,7 @@ package org.alexw.gamecurator.misc;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.io.IOException; // Import IOException
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 public class APIClient {
 
     // --- Configuration ---
-    // API_KEY removed, will be fetched from SettingsManager
     private static final int GLOBAL_PAGE_SIZE = 100; // Default page size for API requests
 
     // --- HTTP Client ---
@@ -30,11 +29,7 @@ public class APIClient {
 
     // --- API Methods ---
 
-    /**
-     * Fetches the top games from the RAWG API, using cache if available.
-     * @return A CompletableFuture containing the JSON string of the results array,
-     *         or completes exceptionally if the API key is missing.
-     */
+    // Fetches the top games from the RAWG API, using cache if available.
     public static CompletableFuture<String> getTopGames() {
         String apiKey = SettingsManager.getRawgApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -43,9 +38,9 @@ public class APIClient {
         }
 
         final String cacheKey = "topGames";
-        String cachedData = CacheManager.get(cacheKey); // Use CacheManager
+        String cachedData = CacheManager.get(cacheKey);
         if (cachedData != null) {
-            return CompletableFuture.completedFuture(cachedData); // Return cached data immediately
+            return CompletableFuture.completedFuture(cachedData);
         }
 
         // Not in cache or expired, fetch from API
@@ -53,11 +48,7 @@ public class APIClient {
         return fetchAndCache(url, cacheKey);
     }
 
-    /**
-     * Fetches new games from the RAWG API, using cache if available.
-     * @return A CompletableFuture containing the JSON string of the results array,
-     *         or completes exceptionally if the API key is missing.
-     */
+    // Fetches new games from the RAWG API, using cache if available.
     public static CompletableFuture<String> getNewGames() {
         String apiKey = SettingsManager.getRawgApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -66,7 +57,7 @@ public class APIClient {
         }
 
         final String cacheKey = "newGames";
-        String cachedData = CacheManager.get(cacheKey); // Use CacheManager
+        String cachedData = CacheManager.get(cacheKey);
         if (cachedData != null) {
             return CompletableFuture.completedFuture(cachedData);
         }
@@ -75,13 +66,7 @@ public class APIClient {
         return fetchAndCache(url, cacheKey);
     }
 
-    /**
-     * Searches for games based on a query, using cache if available.
-     * @param searchQuery The search term.
-     * @return A CompletableFuture containing the JSON string of the results array,
-     *         or an empty array "[]" if the query is empty,
-     *         or completes exceptionally if the API key is missing or an encoding error occurs.
-     */
+    // Searches for games based on a query, using cache if available.
     public static CompletableFuture<String> searchGames(String searchQuery) {
         String apiKey = SettingsManager.getRawgApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -97,36 +82,22 @@ public class APIClient {
 
         // Create cache key with normalized query
         String cacheKey = "search_" + sanitizedQuery.replaceAll("\\s+", "_");
-        String cachedData = CacheManager.get(cacheKey); // Use CacheManager
+        String cachedData = CacheManager.get(cacheKey);
         if (cachedData != null) {
             return CompletableFuture.completedFuture(cachedData);
         }
 
-        try {
-            String encodedQuery = URLEncoder.encode(sanitizedQuery, StandardCharsets.UTF_8);
-            String url = String.format("https://api.rawg.io/api/games?key=%s&page_size=%d&search=%s", apiKey, GLOBAL_PAGE_SIZE, encodedQuery);
-            return fetchAndCache(url, cacheKey);
-        } catch (Exception e) {
-            // Error during URL encoding (unlikely for UTF-8)
-            System.err.println("Error encoding search query: " + e.getMessage());
-            // Return a failed future for consistency with API key errors
-            return CompletableFuture.failedFuture(new IOException("Error encoding search query: " + e.getMessage(), e));
-        }
+        String encodedQuery = URLEncoder.encode(sanitizedQuery, StandardCharsets.UTF_8);
+		String url = String.format("https://api.rawg.io/api/games?key=%s&page_size=%d&search=%s", apiKey, GLOBAL_PAGE_SIZE, encodedQuery);
+		return fetchAndCache(url, cacheKey);
     }
 
     // --- Helper Method for Fetching and Caching ---
-
-    /**
-     * Performs the actual HTTP GET request, parses the "results" field, and caches it using CacheManager.
-     * @param url The URL to fetch.
-     * @param cacheKey The key to use for caching the result (passed to CacheManager).
-     * @return A CompletableFuture containing the JSON string of the results array, or "[]" on error.
-     */
     private static CompletableFuture<String> fetchAndCache(String url, String cacheKey) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .GET() // Default method, explicitly stated for clarity
-                .header("Accept", "application/json") // Good practice to specify accept header
+                .GET()
+                .header("Accept", "application/json")
                 .build();
 
         System.out.println("Cache miss for: " + cacheKey + ". Fetching from API: " + url);
@@ -140,15 +111,14 @@ public class APIClient {
                             JsonObject parsedJson = JsonParser.parseString(jsonBody).getAsJsonObject();
                             if (parsedJson.has("results") && parsedJson.get("results").isJsonArray()) {
                                 String resultsJson = parsedJson.get("results").toString(); // Get the "results" array as a JSON string
-                                CacheManager.put(cacheKey, resultsJson); // Cache using CacheManager
+                                CacheManager.put(cacheKey, resultsJson);
                                 return resultsJson;
                             } else {
                                 System.err.println("API response for key '" + cacheKey + "' missing 'results' array. URL: " + url);
-                                return "[]"; // Return empty JSON array string
+                                return "[]";
                             }
                         } catch (Exception e) {
                             System.err.println("Failed to parse JSON response for key '" + cacheKey + "'. Error: " + e.getMessage() + ". URL: " + url);
-                            // System.err.println("Response Body: " + jsonBody);
                             return "[]";
                         }
                     } else {
@@ -158,17 +128,9 @@ public class APIClient {
                     }
                 })
                 .exceptionally(e -> {
-                    // Handle exceptions during the HTTP request (e.g., network issues)
                     System.err.println("Error fetching data for key '" + cacheKey + "'. Error: " + e.getMessage() + ". URL: " + url);
-                    e.printStackTrace(); // Print stack trace for detailed debugging
+                    e.printStackTrace();
                     return "[]";
                 });
-    }
-
-    /**
-     * Private constructor to prevent instantiation of this utility class.
-     */
-    private APIClient() {
-        throw new IllegalStateException("Utility class");
     }
 }

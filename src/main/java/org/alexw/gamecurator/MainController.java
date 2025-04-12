@@ -21,7 +21,7 @@ import org.alexw.gamecurator.misc.APIClient;
 import org.alexw.gamecurator.util.DialogUtils;
 import org.alexw.gamecurator.util.IconFactory;
 import org.alexw.gamecurator.view.*;
-import org.controlsfx.control.CheckComboBox; // Import for CheckComboBox
+import org.controlsfx.control.CheckComboBox;
 
 import java.net.URL;
 import java.util.*;
@@ -30,25 +30,21 @@ import java.util.stream.Collectors;
 
 public class MainController implements Initializable {
 
-    // --- FXML Elements ---
     @FXML private BorderPane rootPane;
     @FXML private VBox navigationBox;
     @FXML private Label titleLabel;
-    @FXML private StackPane contentPane; // Use StackPane for loading indicator overlay
-    @FXML private HBox filterBar; // Container for filter controls (Assuming HBox, add to FXML later)
-    @FXML private CheckComboBox<String> genreFilterComboBox; // Genre filter control (Add to FXML)
-    @FXML private TextField minPlaytimeFilterField; // Min playtime filter (Add to FXML)
-    @FXML private TextField maxPlaytimeFilterField; // Max playtime filter (Add to FXML)
-    @FXML private Button clearFiltersButton; // Button to clear filters (Add to FXML)
+    @FXML private StackPane contentPane; 
+    @FXML private HBox filterBar; 
+    @FXML private CheckComboBox<String> genreFilterComboBox; 
+    @FXML private TextField minPlaytimeFilterField; 
+    @FXML private TextField maxPlaytimeFilterField; 
+    @FXML private Button clearFiltersButton; 
 
-
-    // --- State and Configuration ---
-    private String currentPageId = "top_games"; // Default page
+    private String currentPageId = "top_games"; 
     private Button currentNavButton = null;
     final Preferences prefs = Preferences.userNodeForPackage(MainController.class);
     final Gson gson = new Gson();
 
-    // Filter State
     private Set<String> selectedGenres = new HashSet<>();
     private Integer minPlaytime = null;
     private Integer maxPlaytime = null;
@@ -62,7 +58,6 @@ public class MainController implements Initializable {
             new PageInfo("Settings", "settings", "SETTINGS")
     );
 
-    // --- Services / Managers ---
     LibraryManager libraryManager;
     GameItemNodeFactory gameItemNodeFactory;
     GameListViewFactory gameListViewFactory;
@@ -71,11 +66,9 @@ public class MainController implements Initializable {
     AssistantViewFactory assistantViewFactory;
     SettingsViewFactory settingsViewFactory;
 
-
-    // --- Initialization ---
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Initialize managers and factories
+
         libraryManager = new LibraryManager(prefs, gson);
         gameItemNodeFactory = new GameItemNodeFactory(libraryManager, this);
         gameListViewFactory = new GameListViewFactory(gameItemNodeFactory);
@@ -85,13 +78,12 @@ public class MainController implements Initializable {
         settingsViewFactory = new SettingsViewFactory(prefs, libraryManager, this);
 
         setupNavigationBar();
-        setupFilterBar(); // Initialize filter controls
+        setupFilterBar(); 
 
-        switchPage(currentPageId); // Load initial page
+        switchPage(currentPageId); 
     }
 
-    // Setup Navigation Bar (no changes needed here)
-    /* public */ void setupNavigationBar() {
+     void setupNavigationBar() {
         navigationBox.getChildren().clear();
         for (PageInfo page : pages) {
             Button navButton = createNavButton(page);
@@ -125,106 +117,90 @@ public class MainController implements Initializable {
         return button;
     }
 
-    // --- Filter Bar Setup ---
     private void setupFilterBar() {
-        // Ensure filterBar is not null (will be injected from FXML)
+
         if (filterBar == null || genreFilterComboBox == null || minPlaytimeFilterField == null || maxPlaytimeFilterField == null || clearFiltersButton == null) {
              System.err.println("Filter bar controls not injected correctly from FXML!");
-             // Optionally hide the bar or disable functionality
+
              if(filterBar != null) filterBar.setVisible(false);
              return;
         }
 
-        // Initially hide the filter bar, show it only for relevant pages
         filterBar.setVisible(false);
-        filterBar.setManaged(false); // Don't reserve space when hidden
+        filterBar.setManaged(false); 
 
-        // Populate Genre ComboBox
         ObservableList<String> availableGenres = FXCollections.observableArrayList(
                 GameListViewFactory.AVAILABLE_GENRES.stream().sorted().collect(Collectors.toList())
         );
         genreFilterComboBox.getItems().addAll(availableGenres);
-        genreFilterComboBox.setTitle("Filter by Genre"); // Placeholder text
+        genreFilterComboBox.setTitle("Filter by Genre"); 
 
-        // Listener for Genre Changes
         genreFilterComboBox.getCheckModel().getCheckedItems().addListener((ListChangeListener<String>) c -> {
             selectedGenres = new HashSet<>(genreFilterComboBox.getCheckModel().getCheckedItems());
-            System.out.println("Selected Genres: " + selectedGenres); // Debug
+            System.out.println("Selected Genres: " + selectedGenres); 
             applyFilters();
         });
 
-        // Listener for Playtime Changes (on text change or focus lost)
         minPlaytimeFilterField.textProperty().addListener((obs, oldVal, newVal) -> handlePlaytimeFilterChange());
         maxPlaytimeFilterField.textProperty().addListener((obs, oldVal, newVal) -> handlePlaytimeFilterChange());
 
-        // Add numeric input validation (optional but recommended)
         addNumericValidation(minPlaytimeFilterField);
         addNumericValidation(maxPlaytimeFilterField);
 
-        // Clear Filters Button Action
         clearFiltersButton.setOnAction(event -> clearFilters());
     }
 
-    // Helper for numeric validation
     private void addNumericValidation(TextField textField) {
         textField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.matches("\\d*")) { // Allow only digits
+            if (!newValue.matches("\\d*")) { 
                 textField.setText(newValue.replaceAll("[^\\d]", ""));
             }
         });
     }
 
-    // Handle changes in playtime fields
     private void handlePlaytimeFilterChange() {
         minPlaytime = parsePlaytimeInput(minPlaytimeFilterField.getText());
         maxPlaytime = parsePlaytimeInput(maxPlaytimeFilterField.getText());
-        System.out.println("Playtime Filter: min=" + minPlaytime + ", max=" + maxPlaytime); // Debug
+        System.out.println("Playtime Filter: min=" + minPlaytime + ", max=" + maxPlaytime); 
         applyFilters();
     }
 
-    // Helper to parse playtime input safely
     private Integer parsePlaytimeInput(String input) {
         if (input == null || input.trim().isEmpty()) {
             return null;
         }
         try {
             int value = Integer.parseInt(input.trim());
-            return value >= 0 ? value : null; // Ensure non-negative
+            return value >= 0 ? value : null; 
         } catch (NumberFormatException e) {
-            return null; // Invalid input
+            return null; 
         }
     }
 
-    // Apply filters and refresh relevant views
     private void applyFilters() {
-        // Refresh only if the current page uses the game list view
+
         if ("top_games".equals(currentPageId) || "new_games".equals(currentPageId)) {
             refreshCurrentPageIf(currentPageId);
         }
-        // Update clear button state
+
         updateClearButtonState();
     }
 
-    // Clear all filters
     private void clearFilters() {
-        genreFilterComboBox.getCheckModel().clearChecks(); // Clears selection and triggers listener
-        minPlaytimeFilterField.clear(); // Triggers listener
-        maxPlaytimeFilterField.clear(); // Triggers listener
-        // applyFilters() will be called by the listeners, no need to call it explicitly here
-        // unless listeners weren't triggered (e.g., already empty)
+        genreFilterComboBox.getCheckModel().clearChecks(); 
+        minPlaytimeFilterField.clear(); 
+        maxPlaytimeFilterField.clear(); 
+
         if (selectedGenres.isEmpty() && minPlaytime == null && maxPlaytime == null) {
-             updateClearButtonState(); // Ensure button state is correct if nothing changed
+             updateClearButtonState(); 
         }
     }
 
-    // Enable/disable clear button based on filter state
     private void updateClearButtonState() {
          boolean filtersActive = !selectedGenres.isEmpty() || minPlaytime != null || maxPlaytime != null;
          clearFiltersButton.setDisable(!filtersActive);
     }
 
-
-    // --- Navigation ---
     @FXML
     private void handleNavigation(ActionEvent event) {
         if (event.getSource() instanceof Button) {
@@ -241,7 +217,6 @@ public class MainController implements Initializable {
         }
     }
 
-    // --- Page Switching ---
     public void switchPage(String pageId) {
         System.out.println("Switching to page: " + pageId);
         this.currentPageId = pageId;
@@ -249,7 +224,6 @@ public class MainController implements Initializable {
         Optional<PageInfo> pageInfo = pages.stream().filter(p -> p.getId().equals(pageId)).findFirst();
         titleLabel.setText(pageInfo.map(PageInfo::getTitle).orElse("Unknown Page"));
 
-        // Update Navigation Button States
         for (Node node : navigationBox.getChildren()) {
             if (node instanceof Button) {
                 Button navButton = (Button) node;
@@ -260,15 +234,13 @@ public class MainController implements Initializable {
             }
         }
 
-        // --- Show/Hide Filter Bar ---
         boolean showFilters = "top_games".equals(pageId) || "new_games".equals(pageId);
         if (filterBar != null) {
             filterBar.setVisible(showFilters);
-            filterBar.setManaged(showFilters); // Manage layout space only when visible
-            updateClearButtonState(); // Update button state when showing/hiding
+            filterBar.setManaged(showFilters); 
+            updateClearButtonState(); 
         }
 
-        // --- Content Loading ---
         contentPane.getChildren().clear();
         ProgressIndicator loadingIndicator = new ProgressIndicator(-1.0);
         loadingIndicator.setMaxSize(50, 50);
@@ -281,12 +253,12 @@ public class MainController implements Initializable {
                 switch (pageId) {
                     case "top_games": {
                         String topJson = APIClient.getTopGames().join();
-                        // Pass current filter state to the factory method
+
                         return gameListViewFactory.createGameListView(topJson, selectedGenres, minPlaytime, maxPlaytime);
                     }
                     case "new_games": {
                         String newJson = APIClient.getNewGames().join();
-                         // Pass current filter state to the factory method
+
                         return gameListViewFactory.createGameListView(newJson, selectedGenres, minPlaytime, maxPlaytime);
                     }
                     case "search":
@@ -331,8 +303,6 @@ public class MainController implements Initializable {
         new Thread(loadTask).start();
     }
 
-
-    // --- Library Interaction Methods (Called by GameItemNodeFactory) ---
     public void handleLibraryToggle(int gameId, JsonObject gameData) {
         boolean wasInLibrary = libraryManager.isInLibrary(gameId);
         boolean changed;
@@ -347,8 +317,6 @@ public class MainController implements Initializable {
         }
     }
 
-
-    // --- Share Action Method (Called by GameItemNodeFactory) ---
     public void handleShareGame(JsonObject game) {
         if (game == null) return;
 
@@ -363,7 +331,7 @@ public class MainController implements Initializable {
         } else if (game.has("id") && game.get("id").isJsonPrimitive()) {
             try {
                 gameSlugOrId = game.get("id").getAsString();
-            } catch (UnsupportedOperationException | NumberFormatException e) { /* ignore */ }
+            } catch (UnsupportedOperationException | NumberFormatException e) {  }
         }
 
         String gameUrl = "https://rawg.io/games/" + gameSlugOrId;
@@ -386,14 +354,10 @@ public class MainController implements Initializable {
         }
     }
 
-    /**
-     * Refreshes the content of the current page if its ID matches the given pageId.
-     * @param pageIdToRefresh The ID of the page to potentially refresh.
-     */
     public void refreshCurrentPageIf(String pageIdToRefresh) {
         if (pageIdToRefresh != null && pageIdToRefresh.equals(this.currentPageId)) {
             System.out.println("Refreshing current page due to filter change or external event: " + pageIdToRefresh);
-            // Ensure the refresh logic also correctly sets the disabled state and filter bar visibility after reload
+
             Platform.runLater(() -> switchPage(this.currentPageId));
         }
     }

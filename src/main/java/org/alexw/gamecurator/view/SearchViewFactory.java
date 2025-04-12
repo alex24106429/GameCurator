@@ -7,13 +7,12 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import org.alexw.gamecurator.misc.APIClient; // Assuming APIClient location
+import org.alexw.gamecurator.misc.APIClient;
 import org.alexw.gamecurator.util.IconFactory;
 
 import java.io.IOException;
@@ -31,20 +30,20 @@ public class SearchViewFactory {
         searchPane.setPadding(new Insets(10));
         TextField searchBox = new TextField();
         searchBox.setPromptText("Search games...");
-        searchBox.setId("searchBox"); // Keep ID for potential lookup if needed elsewhere
+        searchBox.setId("searchBox");
 
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         VBox resultsContainer = new VBox(10);
-        resultsContainer.setPadding(new Insets(5)); // Add padding inside results
-        resultsContainer.setId("gameItemContainer"); // Keep ID
+        resultsContainer.setPadding(new Insets(5));
+        resultsContainer.setId("gameItemContainer");
         scrollPane.setContent(resultsContainer);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         Button searchButton = new Button("Search");
         searchButton.setGraphic(IconFactory.createIcon("SEARCH", IconFactory.BUTTON_ICON_SIZE));
         searchButton.setContentDisplay(ContentDisplay.LEFT);
-        searchButton.setDefaultButton(true); // Allow Enter key in HBox context
+        searchButton.setDefaultButton(true);
 
         // Link actions to the performSearch method within this factory
         searchBox.setOnAction(event -> performSearch(searchBox.getText(), resultsContainer, searchButton));
@@ -61,7 +60,7 @@ public class SearchViewFactory {
         resultsContainer.getChildren().clear();
         String trimmedQuery = (query != null) ? query.trim() : "";
 
-        if (trimmedQuery.length() < 2 || trimmedQuery.length() > 50) { // Adjusted max length
+        if (trimmedQuery.length() < 2 || trimmedQuery.length() > 50) {
             resultsContainer.getChildren().add(new Label("Please enter a search query (2-50 characters)."));
             return;
         }
@@ -76,10 +75,10 @@ public class SearchViewFactory {
 
         // Use CompletableFuture for API call
         APIClient.searchGames(trimmedQuery)
-                .whenCompleteAsync((jsonResult, error) -> { // Ensures UI update is on FX thread
-                    resultsContainer.getChildren().clear(); // Remove indicator
+                .whenCompleteAsync((jsonResult, error) -> {
+                    resultsContainer.getChildren().clear();
                     searchButton.setDisable(false);
-                    searchButton.setText("Search"); // Reset button text
+                    searchButton.setText("Search");
 
                     if (error != null) {
                         resultsContainer.getChildren().add(new Label("Error performing search: " + error.getMessage()));
@@ -88,7 +87,6 @@ public class SearchViewFactory {
                         resultsContainer.getChildren().add(new Label("Your search returned no results."));
                     } else {
                         try {
-                             // Expecting object with "results" array from RAWG search
                             JsonObject resultObject = JsonParser.parseString(jsonResult).getAsJsonObject();
                             if (!resultObject.has("results") || !resultObject.get("results").isJsonArray()) {
                                 throw new JsonSyntaxException("Expected 'results' array not found in search response");
@@ -130,6 +128,6 @@ public class SearchViewFactory {
                             resultsContainer.getChildren().add(new Label("An unexpected error occurred displaying search results."));
                         }
                     }
-                }, Platform::runLater); // Ensure execution on FX thread
+                }, Platform::runLater);
     }
 }

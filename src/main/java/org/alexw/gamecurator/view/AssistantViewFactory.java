@@ -27,7 +27,7 @@ public class AssistantViewFactory {
 
     private final LibraryManager libraryManager;
     private final Preferences prefs;
-    private static final String PREF_AI_RECOMMENDATIONS = "aiRecommendationsEnabled"; // Keep pref key accessible
+    private static final String PREF_AI_RECOMMENDATIONS = "aiRecommendationsEnabled";
 
 
     public AssistantViewFactory(LibraryManager libraryManager, Preferences prefs) {
@@ -42,7 +42,7 @@ public class AssistantViewFactory {
 
         // --- Controls ---
         Button getRecsButton = new Button("Get Recommendations");
-        getRecsButton.setGraphic(IconFactory.createIcon("REFRESH", IconFactory.BUTTON_ICON_SIZE)); // Or "ROBOT"
+        getRecsButton.setGraphic(IconFactory.createIcon("REFRESH", IconFactory.BUTTON_ICON_SIZE));
         // Initial state check
         boolean aiEnabled = prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true);
         boolean libraryEmpty = libraryManager.getLibraryItemIds().isEmpty();
@@ -61,9 +61,9 @@ public class AssistantViewFactory {
         scrollPane.setFitToWidth(true);
         VBox resultsContainer = new VBox(10); // Container for results text/list
         resultsContainer.setPadding(new Insets(10));
-        resultsContainer.getStyleClass().add("results-container"); // Add class for potential lookup/styling
+        resultsContainer.getStyleClass().add("results-container");
         scrollPane.setContent(resultsContainer);
-        VBox.setVgrow(scrollPane, Priority.ALWAYS); // Make scroll pane expand
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         // --- Initial Info / Status Label ---
         Label statusLabel = new Label();
@@ -80,13 +80,13 @@ public class AssistantViewFactory {
 
             if (currentLibraryEmpty) {
                 DialogUtils.showInfoDialog("Empty Library", "Please add games to your library before getting recommendations.");
-                updateStatusLabel(statusLabel, currentAiEnabled, currentLibraryEmpty); // Update status if needed
+                updateStatusLabel(statusLabel, currentAiEnabled, currentLibraryEmpty);
                 getRecsButton.setDisable(true);
                 return;
             }
             if (!currentAiEnabled) {
                 DialogUtils.showInfoDialog("AI Disabled", "AI Recommendations are disabled in Settings.");
-                 updateStatusLabel(statusLabel, currentAiEnabled, currentLibraryEmpty); // Update status if needed
+                 updateStatusLabel(statusLabel, currentAiEnabled, currentLibraryEmpty);
                  getRecsButton.setDisable(true);
                 return;
             }
@@ -94,7 +94,7 @@ public class AssistantViewFactory {
             // Start loading state
             getRecsButton.setDisable(true);
             loadingIndicator.setVisible(true);
-            resultsContainer.getChildren().clear(); // Clear previous results/status
+            resultsContainer.getChildren().clear();
             Label generatingLabel = new Label("Generating recommendations... (This may take a moment)");
             resultsContainer.getChildren().add(generatingLabel);
 
@@ -117,31 +117,28 @@ public class AssistantViewFactory {
                                     .filter(s -> !s.isEmpty())
                                     .collect(Collectors.joining(" "));
                         }
-                        if (genres.isEmpty()) genres = "Unknown Genres"; // Handle case where genre names are missing
+                        if (genres.isEmpty()) genres = "Unknown Genres";
 
                         promptBuilder.append("Title: ").append(name).append("\n");
                         promptBuilder.append("Genres: ").append(genres).append("\n---\n");
                         gamesProcessed++;
                     } catch (Exception e) {
                         System.err.println("Error processing cached game data for ID " + gameId + " in AssistantViewFactory: " + e.getMessage());
-                        // Skip this game in the prompt
                     }
                 } else {
                     System.err.println("Could not find cached game data for ID " + gameId + " in library (AssistantViewFactory).");
-                    // Skip this game in the prompt
                 }
             }
 
             if (gamesProcessed == 0) {
-                // Handle case where no prompt could be built (similar to error handling below)
                 System.err.println("Could not build prompt, no valid library game data found in cache.");
-                return; // Stop processing
+                return;
             }
             String userPrompt = promptBuilder.toString();
             // --- End prompt building ---
 
             CompletableFuture<LLMClient.GameRecommendations> recommendationFuture =
-                    LLMClient.getGameRecommendations(userPrompt); // Pass the built prompt string
+                    LLMClient.getGameRecommendations(userPrompt);
 
             recommendationFuture.whenCompleteAsync((recommendations, error) -> {
                 // This block runs on the JavaFX Application Thread
@@ -151,25 +148,22 @@ public class AssistantViewFactory {
                 getRecsButton.setDisable(!latestAiEnabled || latestLibraryEmpty);
 
                 loadingIndicator.setVisible(false);
-                resultsContainer.getChildren().remove(generatingLabel); // Remove "Generating..." message
+                resultsContainer.getChildren().remove(generatingLabel);
 
                 if (error != null) {
                     resultsContainer.getChildren().add(new Label("Received error:" + error));
                 } else if (recommendations != null) {
                     // Display successful recommendations
                     displayRecommendations(recommendations, resultsContainer);
-                     // Add the status label back at the bottom after results
                     updateStatusLabel(statusLabel, latestAiEnabled, latestLibraryEmpty);
                     resultsContainer.getChildren().add(statusLabel);
                 } else {
-                    // Should not happen if error is null, but handle defensively
                     resultsContainer.getChildren().add(new Label("Received null recommendations without an error."));
-                     // Add the status label back
                     updateStatusLabel(statusLabel, latestAiEnabled, latestLibraryEmpty);
                     resultsContainer.getChildren().add(statusLabel);
                 }
 
-            }, Platform::runLater); // Ensure completion runs on FX thread
+            }, Platform::runLater);
         });
 
         assistantPane.getChildren().addAll(buttonArea, scrollPane);
@@ -186,25 +180,22 @@ public class AssistantViewFactory {
              label.setTextFill(Color.ORANGE);
         } else {
             label.setText("Click 'Get Recommendations' based on your library.");
-            label.setTextFill(Color.BLACK); // Default text color
+            label.setTextFill(Color.BLACK);
         }
     }
 
 
     // Helper method to display recommendations in the Assistant view
     private void displayRecommendations(LLMClient.GameRecommendations recommendations, VBox container) {
-        // container should already be cleared by the caller before calling this
-
         // Display Reasoning
         if (recommendations.getReasoning() != null && !recommendations.getReasoning().isBlank()) {
             Label reasoningHeader = new Label("AI Reasoning:");
             reasoningHeader.setStyle("-fx-font-weight: bold;");
             Text reasoningText = new Text(recommendations.getReasoning());
-            TextFlow reasoningFlow = new TextFlow(reasoningText); // Use TextFlow for wrapping
-            reasoningFlow.setPadding(new Insets(0, 0, 10, 0)); // Add some space below reasoning
-             container.getChildren().addAll(reasoningHeader, reasoningFlow);
+            TextFlow reasoningFlow = new TextFlow(reasoningText);
+            reasoningFlow.setPadding(new Insets(0, 0, 10, 0));
+            container.getChildren().addAll(reasoningHeader, reasoningFlow);
         }
-
 
         // Display Recommended Games List
         Label answerHeader = new Label("Recommendations:");
@@ -216,8 +207,7 @@ public class AssistantViewFactory {
         } else {
             ListView<String> recListView = new ListView<>();
             recListView.getItems().addAll(recommendations.getAnswer());
-            // Optional: Make list view non-editable, set fixed height or preferred height
-            recListView.setPrefHeight(Math.min(recommendations.getAnswer().size() * 28.0 + 5, 300)); // Estimate height + buffer, limit max height
+            recListView.setPrefHeight(Math.min(recommendations.getAnswer().size() * 28.0 + 5, 300));
             recListView.setMaxHeight(Region.USE_PREF_SIZE);
             container.getChildren().add(recListView);
         }

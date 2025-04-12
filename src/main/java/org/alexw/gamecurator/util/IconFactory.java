@@ -9,7 +9,7 @@ public class IconFactory {
 
     private static final Color DEFAULT_ICON_COLOR = Color.BLACK;
 
-    // --- Icon Sizes (Consider moving sizes here or keeping them context-specific) ---
+    // --- Icon Sizes
     public static final double NAV_ICON_SIZE = 28.0;
     public static final double BUTTON_ICON_SIZE = 18.0;
     public static final double SETTINGS_ICON_SIZE = 20.0;
@@ -41,12 +41,11 @@ public class IconFactory {
             // Settings Icons
             case "DELETE":        icon.setIconCode(MaterialDesign.MDI_DELETE); break;
             case "RESTORE":       icon.setIconCode(MaterialDesign.MDI_RESTORE); break;
-            // case "AI":         icon.setIconCode(MaterialDesign.MDI_AUTO_FIX); break; // Replaced by AUTO_FIX
 
             // Default / Fallback
             default:
                 System.err.println("Warning: Unknown icon identifier: " + iconIdentifier);
-                icon.setIconCode(MaterialDesign.MDI_HELP_CIRCLE); // Fallback icon
+                icon.setIconCode(MaterialDesign.MDI_HELP_CIRCLE);
                 break;
         }
         icon.setIconSize((int) size);

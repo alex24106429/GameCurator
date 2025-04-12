@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.alexw.gamecurator.misc.SettingsManager; // Still needed for API Key
+import org.alexw.gamecurator.misc.SettingsManager;
 
 public class LLMClient {
 
@@ -39,9 +39,6 @@ public class LLMClient {
             this.role = role;
             this.content = content;
         }
-        // Getters needed for Gson serialization
-        public String getRole() { return role; }
-        public String getContent() { return content; }
     }
 
     // Represents the expected JSON structure returned by getGameRecommendations
@@ -62,14 +59,7 @@ public class LLMClient {
         }
     }
 
-    /**
-     * Sends a chat completion request to the LLM API.
-     *
-     * @param messages The list of ChatMessage objects representing the conversation.
-     * @param requestJsonFormat If true, requests the API to return JSON format.
-     * @return A CompletableFuture containing the content of the assistant's response as a String.
-     *         Completes exceptionally if the API key is missing or an API error occurs.
-     */
+    // Sends a chat completion request to the LLM API.
     private static CompletableFuture<String> fetchChatCompletion(List<ChatMessage> messages, boolean requestJsonFormat) {
         String apiKey = SettingsManager.getLlmApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -123,18 +113,11 @@ public class LLMClient {
                 });
     }
 
-    /**
-     * Generates game recommendations based on a provided user prompt string.
-     * Assumes the user prompt contains the necessary context (e.g., library game details).
-     *
-     * @param userPrompt A string containing the user's game library details formatted for the LLM.
-     * @return A CompletableFuture containing the GameRecommendations object.
-     *         Completes exceptionally if the API key is missing or an API error occurs.
-     */
+    // Generates game recommendations based on a provided user prompt string.
     public static CompletableFuture<GameRecommendations> getGameRecommendations(String userPrompt) {
          // API key check happens in fetchChatCompletion
 
-        // Define Messages for the API - Simplified, removed example conversation
+        // Define Messages for the API
         List<ChatMessage> messages = List.of(
                 new ChatMessage("system", "Your task is to provide game recommendations based on the user's game library. First reason about it with a long chain of thoughts, then output a list of five game name strings the user might like. Do not output games the user already has in their library. Output in JSON only as follows: {\"reasoning\":\"(Your chain of thoughts here)\",\"answer\":[\"An array of five game name strings\"]}"),
                 new ChatMessage("user", userPrompt)

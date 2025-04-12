@@ -37,7 +37,6 @@ public class MainApplication extends Application {
     }
 
     public static void main(String[] args) {
-        // Set up the local database
         launch();
     }
 }

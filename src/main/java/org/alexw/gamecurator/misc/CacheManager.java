@@ -23,12 +23,12 @@ import java.util.concurrent.TimeUnit;
 public class CacheManager {
 
     // --- Configuration ---
-    private static final long CACHE_TTL = TimeUnit.HOURS.toMillis(24); // 24 hours in milliseconds
-    private static final String CACHE_PREFIX = "cache_"; // Prefix for all cache keys
+    private static final long CACHE_TTL = TimeUnit.HOURS.toMillis(24);
+    private static final String CACHE_PREFIX = "cache_"; 
     private static final String CACHE_DIR_NAME = ".gamecurator/cache";
     private static final String CACHE_FILE_NAME = "app_cache.json";
     private static final Path CACHE_FILE_PATH;
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create(); // For serialization
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     // --- In-Memory Cache ---
     // Needs to be non-final to be replaced during loading
@@ -58,73 +58,48 @@ public class CacheManager {
 
     // --- Cache Management Methods ---
 
-    /**
-     * Retrieves an item from the cache if it exists and hasn't expired.
-     * Removes expired items upon access.
-     * @param item The identifier for the cached item (will be prefixed internally).
-     * @return The cached JSON data string, or null if not found or expired.
-     */
+    // Retrieves an item from the cache if it exists and hasn't expired. Removes expired items upon access.
     public static String get(String item) {
         String key = CACHE_PREFIX + item;
         CacheEntry entry = cache.get(key);
 
         if (entry == null) {
-            // System.out.println("Cache MISS for: " + key);
-            return null; // Not found
+            return null;
         }
 
         long currentTime = System.currentTimeMillis();
         if (currentTime - entry.creationTime > CACHE_TTL) {
-            // System.out.println("Cache EXPIRED for: " + key);
             // Remove expired entry and save the change
             if (cache.remove(key) != null) {
                  saveCacheToFile(); // Save after removal
             }
-            return null; // Expired
+            return null;
         }
 
-        // System.out.println("Cache HIT for: " + key);
-        return entry.jsonData; // Found and valid
+        return entry.jsonData;
     }
 
-    /**
-     * Writes data to the cache and persists the change to disk.
-     * @param item The identifier for the cached item (will be prefixed internally).
-     * @param jsonData The JSON data string to store.
-     */
+    // Writes data to the cache and persists the change to disk.
     public static void put(String item, String jsonData) {
         String key = CACHE_PREFIX + item;
         CacheEntry entry = new CacheEntry(jsonData, System.currentTimeMillis());
         cache.put(key, entry);
-        // System.out.println("Cache WRITE for: " + key);
-        saveCacheToFile(); // Save after putting data
+        saveCacheToFile();
     }
 
-    /**
-     * Removes a specific item from the cache and persists the change to disk.
-     * Does nothing if the item is not found.
-     *
-     * @param item The identifier for the cached item to remove (will be prefixed internally).
-     * @return true if an item was actually removed, false otherwise.
-     */
+    // Removes a specific item from the cache and persists the change to disk.
     public static boolean remove(String item) {
         String key = CACHE_PREFIX + item;
         CacheEntry removedEntry = cache.remove(key);
         boolean wasRemoved = removedEntry != null;
         if (wasRemoved) {
-            // System.out.println("Cache REMOVE success for: " + key);
-            saveCacheToFile(); // Save after removal
-        } else {
-            // System.out.println("Cache REMOVE attempt for: " + key + " - NOT FOUND");
+            saveCacheToFile();
         }
         return wasRemoved;
     }
 
 
-    /**
-     * Removes all entries from the cache managed by this class (matching the prefix)
-     * and persists the change to disk.
-     */
+    // Removes all entries from the cache managed by this class (matching the prefix)
     public static void clear() {
         boolean changed = false;
         // Iterate and remove to know if something was actually removed
@@ -134,22 +109,16 @@ public class CacheManager {
                 changed = true;
             }
         }
-        // A more efficient way for ConcurrentHashMap, but doesn't easily tell us if changed:
-        // cache.keySet().removeIf(key -> key.startsWith(CACHE_PREFIX));
 
         if (changed) {
             System.out.println("Cache CLEARED.");
-            saveCacheToFile(); // Save after clearing
+            saveCacheToFile();
         } else {
-             System.out.println("Cache already empty or no matching prefix found.");
+            System.out.println("Cache already empty or no matching prefix found.");
         }
     }
 
-    /**
-     * Counts the number of items currently in the cache managed by this class.
-     * Does not filter out expired items actively, relies on 'get' or explicit removal.
-     * @return The count of cached items matching the prefix.
-     */
+    // Counts the number of items currently in the cache managed by this class.
     public static long getCount() {
         // Count keys starting with the prefix using streams
         return cache.keySet().stream().filter(key -> key.startsWith(CACHE_PREFIX)).count();
@@ -157,11 +126,7 @@ public class CacheManager {
 
     // --- Persistence Methods ---
 
-    /**
-     * Loads the cache from the JSON file.
-     * If the file doesn't exist or an error occurs, returns an empty cache.
-     * @return A ConcurrentHashMap representing the loaded cache.
-     */
+    // Loads the cache from the JSON file.
     private static Map<String, CacheEntry> loadCacheFromFile() {
         if (!Files.exists(CACHE_FILE_PATH)) {
             System.out.println("Cache file not found (" + CACHE_FILE_PATH + "). Starting with empty cache.");
@@ -175,44 +140,30 @@ public class CacheManager {
             return (loadedCache != null) ? new ConcurrentHashMap<>(loadedCache) : new ConcurrentHashMap<>();
         } catch (IOException e) {
             System.err.println("Error reading cache file: " + CACHE_FILE_PATH);
-            e.printStackTrace(); // Log the error
+            e.printStackTrace();
             return new ConcurrentHashMap<>(); // Return empty cache on I/O error
         } catch (JsonSyntaxException e) {
             System.err.println("Error parsing cache file (invalid JSON): " + CACHE_FILE_PATH);
-            e.printStackTrace(); // Log the error
-            // Optionally: Backup the corrupted file before returning empty
+            e.printStackTrace();
             return new ConcurrentHashMap<>(); // Return empty cache on JSON error
         }
     }
 
-    /**
-     * Saves the current state of the cache map to the JSON file.
-     * This method is synchronized to prevent concurrent write issues.
-     */
+    // Saves the current state of the cache map to the JSON file. This method is synchronized to prevent concurrent write issues.
     private static synchronized void saveCacheToFile() {
         try {
-            // Ensure the directory exists
             Files.createDirectories(CACHE_FILE_PATH.getParent());
 
             // Write the cache map to the file
             try (Writer writer = Files.newBufferedWriter(CACHE_FILE_PATH, StandardCharsets.UTF_8)) {
                 gson.toJson(cache, writer);
             }
-            // System.out.println("Cache saved to: " + CACHE_FILE_PATH);
         } catch (IOException e) {
             System.err.println("Error writing cache file: " + CACHE_FILE_PATH);
-            e.printStackTrace(); // Log the error
+            e.printStackTrace();
         } catch (Exception e) {
             System.err.println("Unexpected error saving cache: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-
-    /**
-     * Private constructor to prevent instantiation of this utility class.
-     */
-    private CacheManager() {
-        throw new IllegalStateException("Utility class");
     }
 }
