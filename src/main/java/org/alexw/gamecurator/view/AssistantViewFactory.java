@@ -1,5 +1,8 @@
 package org.alexw.gamecurator.view;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -10,12 +13,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.alexw.gamecurator.LibraryManager;
-import org.alexw.gamecurator.ai.LLMClient; // Assuming LLMClient location
+import org.alexw.gamecurator.ai.LLMClient;
+import org.alexw.gamecurator.misc.CacheManager;
 import org.alexw.gamecurator.util.DialogUtils;
 import org.alexw.gamecurator.util.IconFactory;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.util.prefs.Preferences;
 
 public class AssistantViewFactory {
@@ -94,8 +99,49 @@ public class AssistantViewFactory {
             resultsContainer.getChildren().add(generatingLabel);
 
             // Call the AI Client asynchronously
+            // --- Build the prompt string first ---
+            StringBuilder promptBuilder = new StringBuilder();
+            int gamesProcessed = 0;
+            for (int gameId : libraryIds) {
+                String gameDataJson = CacheManager.get("gameData_" + gameId);
+                if (gameDataJson != null) {
+                    try {
+                        JsonObject game = JsonParser.parseString(gameDataJson).getAsJsonObject();
+                        String name = game.has("name") ? game.get("name").getAsString() : "Unknown Title";
+
+                        String genres = "Unknown Genres";
+                        if (game.has("genres") && game.get("genres").isJsonArray()) {
+                            genres = game.getAsJsonArray("genres").asList().stream()
+                                    .filter(JsonElement::isJsonObject)
+                                    .map(g -> g.getAsJsonObject().has("name") ? g.getAsJsonObject().get("name").getAsString() : "")
+                                    .filter(s -> !s.isEmpty())
+                                    .collect(Collectors.joining(" "));
+                        }
+                        if (genres.isEmpty()) genres = "Unknown Genres"; // Handle case where genre names are missing
+
+                        promptBuilder.append("Title: ").append(name).append("\n");
+                        promptBuilder.append("Genres: ").append(genres).append("\n---\n");
+                        gamesProcessed++;
+                    } catch (Exception e) {
+                        System.err.println("Error processing cached game data for ID " + gameId + " in AssistantViewFactory: " + e.getMessage());
+                        // Skip this game in the prompt
+                    }
+                } else {
+                    System.err.println("Could not find cached game data for ID " + gameId + " in library (AssistantViewFactory).");
+                    // Skip this game in the prompt
+                }
+            }
+
+            if (gamesProcessed == 0) {
+                // Handle case where no prompt could be built (similar to error handling below)
+                System.err.println("Could not build prompt, no valid library game data found in cache.");
+                return; // Stop processing
+            }
+            String userPrompt = promptBuilder.toString();
+            // --- End prompt building ---
+
             CompletableFuture<LLMClient.GameRecommendations> recommendationFuture =
-                    LLMClient.getGameRecommendations(libraryIds);
+                    LLMClient.getGameRecommendations(userPrompt); // Pass the built prompt string
 
             recommendationFuture.whenCompleteAsync((recommendations, error) -> {
                 // This block runs on the JavaFX Application Thread
@@ -108,29 +154,7 @@ public class AssistantViewFactory {
                 resultsContainer.getChildren().remove(generatingLabel); // Remove "Generating..." message
 
                 if (error != null) {
-                    // Handle errors (API, network, parsing, etc.)
-                    System.err.println("Error fetching recommendations: " + error.getMessage());
-                    error.printStackTrace();
-                    Label errorHeader = new Label("Error Getting Recommendations:");
-                    errorHeader.setTextFill(Color.RED);
-                    errorHeader.setStyle("-fx-font-weight: bold;");
-                    Label errorLabel = new Label(error.getMessage());
-                    errorLabel.setTextFill(Color.RED);
-                    errorLabel.setWrapText(true);
-                    resultsContainer.getChildren().addAll(errorHeader, errorLabel);
-
-                    // Display cause if available
-                    Throwable cause = error.getCause();
-                    if(cause != null) {
-                        Label causeLabel = new Label("Details: " + cause.getMessage());
-                        causeLabel.setWrapText(true);
-                         causeLabel.setTextFill(Color.DARKRED); // Make it look like part of the error
-                        resultsContainer.getChildren().add(causeLabel);
-                    }
-                     // Add the status label back at the bottom in case of error
-                    updateStatusLabel(statusLabel, latestAiEnabled, latestLibraryEmpty);
-                    resultsContainer.getChildren().add(statusLabel);
-
+                    resultsContainer.getChildren().add(new Label("Received error:" + error));
                 } else if (recommendations != null) {
                     // Display successful recommendations
                     displayRecommendations(recommendations, resultsContainer);
