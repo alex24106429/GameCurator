@@ -33,14 +33,14 @@ public class MainController implements Initializable {
     @FXML private BorderPane rootPane;
     @FXML private VBox navigationBox;
     @FXML private Label titleLabel;
-    @FXML private StackPane contentPane; 
-    @FXML private HBox filterBar; 
-    @FXML private CheckComboBox<String> genreFilterComboBox; 
-    @FXML private TextField minPlaytimeFilterField; 
-    @FXML private TextField maxPlaytimeFilterField; 
-    @FXML private Button clearFiltersButton; 
+    @FXML private StackPane contentPane;
+    @FXML private HBox filterBar;
+    @FXML private CheckComboBox<String> genreFilterComboBox;
+    @FXML private TextField minPlaytimeFilterField;
+    @FXML private TextField maxPlaytimeFilterField;
+    @FXML private Button clearFiltersButton;
 
-    private String currentPageId = "top_games"; 
+    private String currentPageId = "top_games";
     private Button currentNavButton = null;
     final Preferences prefs = Preferences.userNodeForPackage(MainController.class);
     final Gson gson = new Gson();
@@ -58,13 +58,12 @@ public class MainController implements Initializable {
             new PageInfo("Settings", "settings", "SETTINGS")
     );
 
+    // Managers and Factories
     LibraryManager libraryManager;
     GameItemNodeFactory gameItemNodeFactory;
-    GameListViewFactory gameListViewFactory;
-    SearchViewFactory searchViewFactory;
-    LibraryViewFactory libraryViewFactory;
-    AssistantViewFactory assistantViewFactory;
-    SettingsViewFactory settingsViewFactory;
+    GameListViewFactory gameListViewFactory; // Keep separate as it needs parameters
+    // Use a map for factories implementing the ViewFactory interface
+    private final Map<String, ViewFactory> viewFactories = new HashMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -72,15 +71,17 @@ public class MainController implements Initializable {
         libraryManager = new LibraryManager(prefs, gson);
         gameItemNodeFactory = new GameItemNodeFactory(libraryManager, this);
         gameListViewFactory = new GameListViewFactory(gameItemNodeFactory);
-        searchViewFactory = new SearchViewFactory(gameItemNodeFactory);
-        libraryViewFactory = new LibraryViewFactory(libraryManager, gameItemNodeFactory);
-        assistantViewFactory = new AssistantViewFactory(libraryManager, prefs);
-        settingsViewFactory = new SettingsViewFactory(prefs, libraryManager, this);
+
+        // Instantiate and populate the map with factories implementing ViewFactory
+        viewFactories.put("search", new SearchViewFactory(gameItemNodeFactory));
+        viewFactories.put("library", new LibraryViewFactory(libraryManager, gameItemNodeFactory));
+        viewFactories.put("assistant", new AssistantViewFactory(libraryManager, prefs));
+        viewFactories.put("settings", new SettingsViewFactory(prefs, libraryManager, this));
 
         setupNavigationBar();
-        setupFilterBar(); 
+        setupFilterBar();
 
-        switchPage(currentPageId); 
+        switchPage(currentPageId);
     }
 
      void setupNavigationBar() {
@@ -127,17 +128,17 @@ public class MainController implements Initializable {
         }
 
         filterBar.setVisible(false);
-        filterBar.setManaged(false); 
+        filterBar.setManaged(false);
 
         ObservableList<String> availableGenres = FXCollections.observableArrayList(
                 GameListViewFactory.AVAILABLE_GENRES.stream().sorted().collect(Collectors.toList())
         );
         genreFilterComboBox.getItems().addAll(availableGenres);
-        genreFilterComboBox.setTitle("Filter by Genre"); 
+        genreFilterComboBox.setTitle("Filter by Genre");
 
         genreFilterComboBox.getCheckModel().getCheckedItems().addListener((ListChangeListener<String>) c -> {
             selectedGenres = new HashSet<>(genreFilterComboBox.getCheckModel().getCheckedItems());
-            System.out.println("Selected Genres: " + selectedGenres); 
+            System.out.println("Selected Genres: " + selectedGenres);
             applyFilters();
         });
 
@@ -152,7 +153,7 @@ public class MainController implements Initializable {
 
     private void addNumericValidation(TextField textField) {
         textField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.matches("\\d*")) { 
+            if (!newValue.matches("\\d*")) {
                 textField.setText(newValue.replaceAll("[^\\d]", ""));
             }
         });
@@ -161,7 +162,7 @@ public class MainController implements Initializable {
     private void handlePlaytimeFilterChange() {
         minPlaytime = parsePlaytimeInput(minPlaytimeFilterField.getText());
         maxPlaytime = parsePlaytimeInput(maxPlaytimeFilterField.getText());
-        System.out.println("Playtime Filter: min=" + minPlaytime + ", max=" + maxPlaytime); 
+        System.out.println("Playtime Filter: min=" + minPlaytime + ", max=" + maxPlaytime);
         applyFilters();
     }
 
@@ -171,9 +172,9 @@ public class MainController implements Initializable {
         }
         try {
             int value = Integer.parseInt(input.trim());
-            return value >= 0 ? value : null; 
+            return value >= 0 ? value : null;
         } catch (NumberFormatException e) {
-            return null; 
+            return null;
         }
     }
 
@@ -187,13 +188,12 @@ public class MainController implements Initializable {
     }
 
     private void clearFilters() {
-        genreFilterComboBox.getCheckModel().clearChecks(); 
-        minPlaytimeFilterField.clear(); 
-        maxPlaytimeFilterField.clear(); 
+        genreFilterComboBox.getCheckModel().clearChecks();
+        minPlaytimeFilterField.clear();
+        maxPlaytimeFilterField.clear();
 
-        if (selectedGenres.isEmpty() && minPlaytime == null && maxPlaytime == null) {
-             updateClearButtonState(); 
-        }
+        // Re-apply filters (which will now be empty) to refresh the view
+        applyFilters();
     }
 
     private void updateClearButtonState() {
@@ -224,6 +224,7 @@ public class MainController implements Initializable {
         Optional<PageInfo> pageInfo = pages.stream().filter(p -> p.getId().equals(pageId)).findFirst();
         titleLabel.setText(pageInfo.map(PageInfo::getTitle).orElse("Unknown Page"));
 
+        // Disable the currently active navigation button
         for (Node node : navigationBox.getChildren()) {
             if (node instanceof Button) {
                 Button navButton = (Button) node;
@@ -234,43 +235,42 @@ public class MainController implements Initializable {
             }
         }
 
+        // Show/hide filter bar based on page
         boolean showFilters = "top_games".equals(pageId) || "new_games".equals(pageId);
         if (filterBar != null) {
             filterBar.setVisible(showFilters);
-            filterBar.setManaged(showFilters); 
-            updateClearButtonState(); 
+            filterBar.setManaged(showFilters);
+            updateClearButtonState();
         }
 
+        // Show loading indicator
         contentPane.getChildren().clear();
         ProgressIndicator loadingIndicator = new ProgressIndicator(-1.0);
         loadingIndicator.setMaxSize(50, 50);
         contentPane.getChildren().add(loadingIndicator);
         StackPane.setAlignment(loadingIndicator, Pos.CENTER);
 
+        // Task to load page content asynchronously
         Task<Parent> loadTask = new Task<>() {
             @Override
             protected Parent call() throws Exception {
-                switch (pageId) {
-                    case "top_games": {
-                        String topJson = APIClient.getTopGames().join();
-
-                        return gameListViewFactory.createGameListView(topJson, selectedGenres, minPlaytime, maxPlaytime);
+                // Handle pages requiring specific data separately
+                if ("top_games".equals(pageId)) {
+                    String topJson = APIClient.getTopGames().join();
+                    return gameListViewFactory.createGameListView(topJson, selectedGenres, minPlaytime, maxPlaytime);
+                } else if ("new_games".equals(pageId)) {
+                    String newJson = APIClient.getNewGames().join();
+                    return gameListViewFactory.createGameListView(newJson, selectedGenres, minPlaytime, maxPlaytime);
+                } else {
+                    // Use the map for pages implementing ViewFactory
+                    ViewFactory factory = viewFactories.get(pageId);
+                    if (factory != null) {
+                        return factory.createView();
+                    } else {
+                        // Fallback for unknown pages
+                        System.err.println("No view factory found for page ID: " + pageId);
+                        return new VBox(new Label("Content for " + pageId + " not implemented or factory missing."));
                     }
-                    case "new_games": {
-                        String newJson = APIClient.getNewGames().join();
-
-                        return gameListViewFactory.createGameListView(newJson, selectedGenres, minPlaytime, maxPlaytime);
-                    }
-                    case "search":
-                        return searchViewFactory.createSearchView();
-                    case "assistant":
-                        return assistantViewFactory.createAssistantView();
-                    case "library":
-                        return libraryViewFactory.createLibraryView();
-                    case "settings":
-                        return settingsViewFactory.createSettingsView();
-                    default:
-                        return new VBox(new Label("Content for " + pageId + " not implemented."));
                 }
             }
         };
@@ -303,6 +303,7 @@ public class MainController implements Initializable {
         new Thread(loadTask).start();
     }
 
+    // Called by GameItemNodeFactory when the library button is clicked
     public void handleLibraryToggle(int gameId, JsonObject gameData) {
         boolean wasInLibrary = libraryManager.isInLibrary(gameId);
         boolean changed;
@@ -312,11 +313,14 @@ public class MainController implements Initializable {
             changed = libraryManager.addLibraryItem(gameId, gameData);
         }
         if (changed) {
+             // Refresh library view if it's the current page
              refreshCurrentPageIf("library");
+             // Refresh assistant view if it's the current page (as recommendations depend on library)
              refreshCurrentPageIf("assistant");
         }
     }
 
+    // Called by GameItemNodeFactory when the share button is clicked
     public void handleShareGame(JsonObject game) {
         if (game == null) return;
 
@@ -331,7 +335,7 @@ public class MainController implements Initializable {
         } else if (game.has("id") && game.get("id").isJsonPrimitive()) {
             try {
                 gameSlugOrId = game.get("id").getAsString();
-            } catch (UnsupportedOperationException | NumberFormatException e) {  }
+            } catch (UnsupportedOperationException | NumberFormatException e) { /* ignore */ }
         }
 
         String gameUrl = "https://rawg.io/games/" + gameSlugOrId;
@@ -354,10 +358,13 @@ public class MainController implements Initializable {
         }
     }
 
+    // Refreshes the current page content if its ID matches the provided one.
+    // Useful for updating views after data changes (e.g., library updates, filter changes).
     public void refreshCurrentPageIf(String pageIdToRefresh) {
         if (pageIdToRefresh != null && pageIdToRefresh.equals(this.currentPageId)) {
             System.out.println("Refreshing current page due to filter change or external event: " + pageIdToRefresh);
 
+            // Re-run the switchPage logic for the current page to reload its content
             Platform.runLater(() -> switchPage(this.currentPageId));
         }
     }

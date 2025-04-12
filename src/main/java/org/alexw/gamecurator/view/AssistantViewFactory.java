@@ -23,7 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.prefs.Preferences;
 
-public class AssistantViewFactory {
+// Implement the ViewFactory interface
+public class AssistantViewFactory implements ViewFactory {
 
     private final LibraryManager libraryManager;
     private final Preferences prefs;
@@ -35,7 +36,9 @@ public class AssistantViewFactory {
         this.prefs = prefs;
     }
 
-    public Parent createAssistantView() {
+    // Rename method and add Override annotation
+    @Override
+    public Parent createView() {
         VBox assistantPane = new VBox(15);
         assistantPane.setPadding(new Insets(20));
         assistantPane.getStyleClass().add("assistant-pane");
@@ -132,7 +135,18 @@ public class AssistantViewFactory {
 
             if (gamesProcessed == 0) {
                 System.err.println("Could not build prompt, no valid library game data found in cache.");
-                return;
+                // Need to handle UI feedback here too
+                Platform.runLater(() -> {
+                    loadingIndicator.setVisible(false);
+                    resultsContainer.getChildren().remove(generatingLabel);
+                    resultsContainer.getChildren().add(new Label("Error: Could not process library data for recommendations."));
+                    boolean latestAiEnabled = prefs.getBoolean(PREF_AI_RECOMMENDATIONS, true);
+                    boolean latestLibraryEmpty = libraryManager.getLibraryItemIds().isEmpty();
+                    getRecsButton.setDisable(!latestAiEnabled || latestLibraryEmpty);
+                    updateStatusLabel(statusLabel, latestAiEnabled, latestLibraryEmpty);
+                    resultsContainer.getChildren().add(statusLabel);
+                });
+                return; // Stop further processing
             }
             String userPrompt = promptBuilder.toString();
             // --- End prompt building ---

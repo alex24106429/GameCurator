@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
-public class LibraryViewFactory {
+// Implement the ViewFactory interface
+public class LibraryViewFactory implements ViewFactory {
 
     private final LibraryManager libraryManager;
     private final GameItemNodeFactory gameItemNodeFactory;
@@ -33,7 +34,9 @@ public class LibraryViewFactory {
         this.gameItemNodeFactory = gameItemNodeFactory;
     }
 
-    public Parent createLibraryView() {
+    // Rename method and add Override annotation
+    @Override
+    public Parent createView() {
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         VBox libraryContainer = new VBox(10);
@@ -86,6 +89,8 @@ public class LibraryViewFactory {
                         }
                     } else {
                         System.out.println("Data for game ID: " + gameId + " not found in cache. Cannot display.");
+                        // Optionally add an error message here too if needed
+                        // errorMessages.add("Data for game ID: " + gameId + " not found in cache.");
                     }
                 }
 
@@ -95,7 +100,7 @@ public class LibraryViewFactory {
                 ));
 
 
-                // Create UI Nodes
+                // Create UI Nodes on the FX Application Thread
                 List<Node> gameNodes = new ArrayList<>();
                 CountDownLatch latch = new CountDownLatch(1);
                 Platform.runLater(() -> {
@@ -122,7 +127,7 @@ public class LibraryViewFactory {
                         latch.countDown();
                     }
                 });
-                latch.await();
+                latch.await(); // Wait for UI nodes to be created
                 return gameNodes;
             }
 
@@ -136,7 +141,7 @@ public class LibraryViewFactory {
         };
 
         loadLibraryTask.setOnSucceeded(event -> {
-            libraryContainer.getChildren().clear();
+            libraryContainer.getChildren().clear(); // Clear loading indicator
             List<Node> nodes = loadLibraryTask.getValue();
             if (nodes.isEmpty() && !libraryItemIds.isEmpty()){
                  // This means cache was missing for all items or errors occurred for all
@@ -150,7 +155,7 @@ public class LibraryViewFactory {
         });
 
         loadLibraryTask.setOnFailed(event -> {
-            libraryContainer.getChildren().clear();
+            libraryContainer.getChildren().clear(); // Clear loading indicator
             Throwable ex = loadLibraryTask.getException();
             ex.printStackTrace();
             Label errorLabel = new Label("Error loading library items: " + ex.getMessage());

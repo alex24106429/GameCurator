@@ -19,7 +19,8 @@ import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
-public class SettingsViewFactory {
+// Implement the ViewFactory interface
+public class SettingsViewFactory implements ViewFactory {
 
     private final Preferences prefs;
     private final LibraryManager libraryManager;
@@ -38,7 +39,9 @@ public class SettingsViewFactory {
         this.mainController = mainController;
     }
 
-    public Parent createSettingsView() {
+    // Rename method and add Override annotation
+    @Override
+    public Parent createView() {
         VBox settingsPane = new VBox(15);
         settingsPane.setPadding(new Insets(20));
         settingsPane.getStyleClass().add("settings-pane");

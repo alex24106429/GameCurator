@@ -17,7 +17,8 @@ import org.alexw.gamecurator.util.IconFactory;
 
 import java.io.IOException;
 
-public class SearchViewFactory {
+// Implement the ViewFactory interface
+public class SearchViewFactory implements ViewFactory {
 
     private final GameItemNodeFactory gameItemNodeFactory;
 
@@ -25,7 +26,9 @@ public class SearchViewFactory {
         this.gameItemNodeFactory = gameItemNodeFactory;
     }
 
-    public Parent createSearchView() {
+    // Rename method and add Override annotation
+    @Override
+    public Parent createView() {
         VBox searchPane = new VBox(10);
         searchPane.setPadding(new Insets(10));
         TextField searchBox = new TextField();
