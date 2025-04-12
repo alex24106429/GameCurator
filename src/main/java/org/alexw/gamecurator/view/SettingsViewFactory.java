@@ -9,9 +9,9 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import org.alexw.gamecurator.LibraryManager;
-import org.alexw.gamecurator.MainController; // Needed to call switchPage
-import org.alexw.gamecurator.misc.CacheManager; // Assuming location
-import org.alexw.gamecurator.misc.SettingsManager; // Import SettingsManager
+import org.alexw.gamecurator.MainController;
+import org.alexw.gamecurator.misc.CacheManager;
+import org.alexw.gamecurator.misc.SettingsManager;
 import org.alexw.gamecurator.util.DialogUtils;
 import org.alexw.gamecurator.util.IconFactory;
 
