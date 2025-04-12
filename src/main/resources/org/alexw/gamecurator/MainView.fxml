@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?> <!-- Added for Settings text -->
+
+<BorderPane fx:id="rootPane" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.alexw.gamecurator.MainController">
+    <left>
+        <VBox fx:id="navigationBox" spacing="5.0" styleClass="navigation-bar" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="10.0" right="5.0" bottom="10.0" left="5.0" />
+            </padding>
+            <!-- Navigation Buttons will be added here dynamically by the HTMLController -->
+            <!-- Example structure (repeated in controller):
+            <Button fx:id="topGamesNavButton" contentDisplay="TOP" mnemonicParsing="false" onAction="#handleNavigation" styleClass="navbar-item" text="Top Games" userData="top_games">
+                <graphic>
+                    <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@icons/favorite_star.png" />
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button> -->
+        </VBox>
+    </left>
+    <center>
+        <VBox BorderPane.alignment="CENTER">
+            <children>
+                <HBox alignment="CENTER_LEFT" styleClass="title-bar">
+                    <padding>
+                        <Insets top="10.0" right="20.0" bottom="10.0" left="20.0" />
+                    </padding>
+                    <children>
+                        <Label fx:id="titleLabel" text="Page Title">
+                            <font>
+                                <Font name="System Bold" size="18.0" />
+                            </font>
+                        </Label>
+                    </children>
+                </HBox>
+                <StackPane fx:id="contentPane" VBox.vgrow="ALWAYS" styleClass="content-pane">
+                    <!-- Content for the selected page will be loaded here -->
+                    <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                </StackPane>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>
